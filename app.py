@@ -1,11 +1,29 @@
-from flask import Flask
+from flask import Flask, jsonify
 application = Flask("my_glo4035_application")
+
+
+# ----- Interface Graphique -----
+
+
+# Contient une interface graphique permettant d'afficher:
+# - Le coût total à unedate précise pour une catégorie de matériel.
+# - Le coût moyen d'acquisition, pondéré par l'unité d'acquisiton, à une date
+#   précise d'une catégorie de matériel.
+# - L'image à une date précise de la quantité restante, en unité d'utilisation,
+#   des matières premières.
+
+
+# Contient une interface (API ou Graphique) permettant d'ajouter, modifier ou
+# supprimer une transaction.
+
+
+# ------------- API -------------
 
 
 # Route d'API accueillant les utilisateurs.
 @application.route("/", methods=["GET", "POST"])
 def index():
-    return "Oh yeah"
+    return "Graphic interface goes here!"
 
 
 # Route d'API pouvant recevoir et persister les transactions envoyés par une
@@ -26,16 +44,19 @@ def correction_drop():
     return ""
 
 
-# Contient une interface graphique permettant d'afficher:
-# - Le coût total à unedate précise pour une catégorie de matériel.
-# - Le coût moyen d'acquisition, pondéré par l'unité d'acquisiton, à une date
-#   précise d'une catégorie de matériel.
-# - L'image à une date précise de la quantité restante, en unité d'utilisation,
-#   des matières premières.
+# ---------- Fonctions ----------
 
 
-# Contient une interface (API ou Graphique) permettant d'ajouter, modifier ou
-# supprimer une transaction.
+def verify_passwd(data):
+    if data.password == "abc12345":
+        return jsonify({"result": "success", "status": "200",
+                        "message": "Correct password."}), 200
+    else:
+        return jsonify({"result": "failure", "status": "401",
+                        "message": "Wrong password."}), 401
+
+
+# ---------- Exécution ----------
 
 
 if __name__ == "__main__":
