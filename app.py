@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request, render_template
 from flask_pymongo import PyMongo
-# import pymongo
 import hashlib
 
 
@@ -8,7 +7,8 @@ application = Flask("my_glo4035_application")
 application.config["JSON_SORT_KEYS"] = False
 application.config["MONGO_URI"] = "mongodb://127.0.0.1:27017/mySystem"
 mongo = PyMongo(application)
-mongo.db.inventory.drop()
+inv = mongo.db.inventory
+inv.drop()
 
 
 # ----- Interface Graphique -----
