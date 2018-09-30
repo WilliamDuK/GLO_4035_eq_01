@@ -8,7 +8,6 @@ application.config["JSON_SORT_KEYS"] = False
 application.config["MONGO_URI"] = "mongodb://127.0.0.1:27017/mySystem"
 mongo = PyMongo(application)
 inv = mongo.db.inventory
-inv.drop()
 
 
 # ----- Interface Graphique -----
@@ -56,9 +55,8 @@ def correction_drop():
     )  # localhost/transactions?password=INPUT_HERE
     res = verify_passwd(data_input.json["password"])
     if res[0].json["result"] == "Success":
-        return res
-    else:
-        return res
+        inv.drop()
+    return res
 
 
 # ---------- Fonctions ----------
