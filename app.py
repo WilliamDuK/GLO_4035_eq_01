@@ -1,4 +1,6 @@
 from flask import Flask, jsonify
+# import pymongo
+# import flask_pymongo
 application = Flask("my_glo4035_application")
 
 
@@ -21,7 +23,7 @@ application = Flask("my_glo4035_application")
 
 
 # Route d'API accueillant les utilisateurs.
-@application.route("/", methods=["GET", "POST"])
+@application.route("/", methods=["GET"])
 def index():
     return "Graphic interface goes here!"
 
