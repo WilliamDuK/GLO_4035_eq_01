@@ -1,12 +1,13 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
+from flask_pymongo import PyMongo
 # import pymongo
-# import flask_pymongo
 import hashlib
 
 
 application = Flask("my_glo4035_application")
-application.config['JSON_SORT_KEYS'] = False
-
+application.config["JSON_SORT_KEYS"] = False
+application.config["MONGO_URI"] = "mongodb://127.0.0.1:27017/mySystem"
+mongo = PyMongo(application)
 
 # ----- Interface Graphique -----
 
@@ -29,7 +30,9 @@ application.config['JSON_SORT_KEYS'] = False
 # Route d'API accueillant les utilisateurs.
 @application.route("/", methods=["GET"])
 def index():
-    return "Graphic interface goes here!"
+    fetch = mongo.db.inventory.drop()
+    test = fetch
+    return render_template("index.html")
 
 
 # Route d'API pouvant recevoir et persister les transactions envoyés par une
@@ -80,4 +83,4 @@ def verify_passwd(password):  # d6b0ab7f1c8ab8f514db9a6d85de160a = md5(abc12345)
 
 
 if __name__ == "__main__":
-    application.run(host="0.0.0.0", port=80)
+    application.run(host="127.0.0.1", port=80)
