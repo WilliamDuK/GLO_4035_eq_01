@@ -3,9 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <title>Système d'inventaire</title>
-    <p>Graphic interface goes here!</p>
+
+    <style type="text/css">
+        .browseJson {
+            width: 70px;
+        }
+        .inputJson {
+            width: 640px;
+        }
+        .okJson {
+            width: 34px;
+        }
+
+        .viewList {
+            resize: none;
+            height: 300px;
+            width: 750px;
+        }
+
+        .inputDel {
+            width: 516px;
+        }
+        .okDel {
+            width: 34px;
+        }
+    </style>
 </head>
 <body>
-
+    <span style="font-size:30px"> Système d'inventaire</span>
+    TODO: remake HTML components using Flex
+    <hr/>
+    <div>
+        <button class="browseJson" id="browseTrans">Parcourir</button>
+        <input type="text" class="inputJson" id="inputTrans" placeholder="Ajoutez un fichier JSON ici.">
+        <button class="okJson" id="okTrans">Ok</button>
+    </div>
+    <br/>
+    <div>
+        <textarea type="text" class="viewList" id="viewTrans" placeholder="La liste des transactions s'affiche ici." readonly></textarea>
+    </div>
+    <br/>
+    <div>
+        Pour tout effacer la collection:
+        <input type="text" class="inputDel" id="inputPass" placeholder="Ajoutez le mot de passe ici.">
+        <button class="okDel" id="okPass">Ok</button>
+    </div>
 </body>
 </html>
