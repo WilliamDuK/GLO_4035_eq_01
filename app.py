@@ -1,7 +1,11 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 # import pymongo
 # import flask_pymongo
+import hashlib
+
+
 application = Flask("my_glo4035_application")
+application.config['JSON_SORT_KEYS'] = False
 
 
 # ----- Interface Graphique -----
@@ -43,19 +47,33 @@ def correction_add():
 # - Code HTTP 401: si mauvais mot de passe.
 @application.route("/transactions", methods=["DELETE"])
 def correction_drop():
-    return ""
+    passwd = hashlib.md5(request.args.get("password").encode("utf-8")).hexdigest()
+    data_input = jsonify(
+        password=passwd
+    )  # localhost/transactions?password=INPUT_HERE
+    res = verify_passwd(data_input.json["password"])
+    if res[0].json["result"] == "Success":
+        return res
+    else:
+        return res
 
 
 # ---------- Fonctions ----------
 
 
-def verify_passwd(data):
-    if data.password == "abc12345":
-        return jsonify({"result": "success", "status": "200",
-                        "message": "Correct password."}), 200
+def verify_passwd(password):  # d6b0ab7f1c8ab8f514db9a6d85de160a = md5(abc12345)
+    if password == "d6b0ab7f1c8ab8f514db9a6d85de160a":
+        return jsonify(
+            result="Success",
+            status="200",
+            message="Correct password"
+        ), 200
     else:
-        return jsonify({"result": "failure", "status": "401",
-                        "message": "Wrong password."}), 401
+        return jsonify(
+            result="Failure",
+            status="401",
+            message="Wrong password"
+        ), 401
 
 
 # ---------- Exécution ----------
