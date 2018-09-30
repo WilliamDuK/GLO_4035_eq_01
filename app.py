@@ -8,6 +8,8 @@ application = Flask("my_glo4035_application")
 application.config["JSON_SORT_KEYS"] = False
 application.config["MONGO_URI"] = "mongodb://127.0.0.1:27017/mySystem"
 mongo = PyMongo(application)
+mongo.db.inventory.drop()
+
 
 # ----- Interface Graphique -----
 
@@ -30,8 +32,6 @@ mongo = PyMongo(application)
 # Route d'API accueillant les utilisateurs.
 @application.route("/", methods=["GET"])
 def index():
-    fetch = mongo.db.inventory.drop()
-    test = fetch
     return render_template("index.html")
 
 
