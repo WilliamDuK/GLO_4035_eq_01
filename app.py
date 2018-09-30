@@ -10,6 +10,10 @@ mongo = PyMongo(application)
 inv = mongo.db.inventory
 
 
+# md5(abc12345) = d6b0ab7f1c8ab8f514db9a6d85de160a
+MD5_HASHED_PASSWORD = "d6b0ab7f1c8ab8f514db9a6d85de160a"
+
+
 # ----- Interface Graphique -----
 
 
@@ -65,8 +69,8 @@ def correction_drop():
 # ---------- Fonctions ----------
 
 
-def verify_passwd(password):  # d6b0ab7f1c8ab8f514db9a6d85de160a = md5(abc12345)
-    if password == "d6b0ab7f1c8ab8f514db9a6d85de160a":
+def verify_passwd(password):
+    if password == MD5_HASHED_PASSWORD:
         return jsonify(
             result="Success",
             status="200",
