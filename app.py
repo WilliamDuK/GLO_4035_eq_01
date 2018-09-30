@@ -49,14 +49,17 @@ def correction_add():
 # - Code HTTP 401: si mauvais mot de passe.
 @application.route("/transactions", methods=["DELETE"])
 def correction_drop():
-    passwd = hashlib.md5(request.args.get("password").encode("utf-8")).hexdigest()
-    data_input = jsonify(
-        password=passwd
-    )  # localhost/transactions?password=INPUT_HERE
-    res = verify_passwd(data_input.json["password"])
-    if res[0].json["result"] == "Success":
-        inv.drop()
-    return res
+    if request.headers['Content-Type'] == "application/json":
+        passwd = hashlib.md5(request.get_json()["password"].encode("utf-8")).hexdigest()
+        res = verify_passwd(passwd)
+        if res[0].json["result"] == "Success":
+            inv.drop()
+        return res
+    return jsonify(
+        result="Failure",
+        status="405",
+        message="The wrong type of content was sent"
+    ), 405
 
 
 # ---------- Fonctions ----------
