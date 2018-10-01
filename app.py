@@ -44,7 +44,25 @@ def index():
 # - Code HTTP 400: JSON mal formaté.
 @application.route("/transactions", methods=["POST"])
 def correction_add():
-    return ""
+    if request.headers['Content-Type'] == "application/json":
+        data = request.get_json()
+        if verify_json(data):  # Trouver un moyen de détecter la structure du JSON
+            inv.insert(data)
+            return jsonify(
+                result="Success",
+                status="200",
+                message="The JSON is correctly formatted"
+            ), 200
+        return jsonify(
+            result="Failure",
+            status="400",
+            message="The JSON is incorrectly formatted"
+        ), 400
+    return jsonify(
+        result="Failure",
+        status="405",
+        message="The wrong type of content was sent"
+    ), 405
 
 
 # Route d'API pouvant vider les collections de votre base de données. Dois être
@@ -67,6 +85,10 @@ def correction_drop():
 
 
 # ---------- Fonctions ----------
+
+
+def verify_json(data):
+    return True
 
 
 def verify_passwd(password):
