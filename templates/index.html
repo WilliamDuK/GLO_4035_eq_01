@@ -3,24 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Système d'inventaire</title>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>-->
 
     <style type="text/css">
-        .viewList {
-            resize: none;
-            height: 300px;
-            width: 750px;
-        }
+
     </style>
 </head>
 <body>
     <span style="font-size:30px">Système d'inventaire</span>
     <hr/>
-    <div>
-        <textarea type="text" class="viewList" id="viewTrans" placeholder="La liste des transactions s'affiche ici." readonly></textarea>
-    </div>
+    <div id="transactions-list"></div>
     <hr/>
     <b>TODO:</b>
     <ul>
+        <li>Modifier correction_drop() afin que ce soit toutes les collections qui soient drop?</li>
         <li>Refaire les composantes HTML en utilisant Flex</li>
         <li>Apprendre comment intéragir avec l'interface en utilisant Flask</li>
         <li>Créer des composantes HTML pour la liste(ajouter, modifier ou supprimer une transaction)</li>
@@ -29,5 +25,9 @@
         <li>Trouver comment exploiter les données, puis afficher les résultats de ces exploitation</li>
         <li>Trouver un service de base de donnée (ex. mLab) pour remplacer celui en local</li>
     </ul>
+
+    <script>
+
+    </script>
 </body>
 </html>
