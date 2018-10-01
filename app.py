@@ -46,7 +46,7 @@ def index():
 def correction_add():
     if request.headers['Content-Type'] == "application/json":
         data = request.get_json()
-        if verify_json(data):  # Trouver un moyen de détecter la structure du JSON
+        if verify_json(data):
             inv.insert(data)
             return jsonify(
                 result="Success",
@@ -71,7 +71,7 @@ def correction_add():
 # - Code HTTP 401: si mauvais mot de passe.
 @application.route("/transactions", methods=["DELETE"])
 def correction_drop():
-    if request.headers['Content-Type'] == "application/json":
+    if request.headers["Content-Type"] == "application/json":
         passwd = hashlib.md5(request.get_json()["password"].encode("utf-8")).hexdigest()
         res = verify_passwd(passwd)
         if res[0].json["result"] == "Success":
