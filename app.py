@@ -48,7 +48,10 @@ def add_many_transactions():
     if request.headers['Content-Type'] == "application/json":
         data = request.get_json()
         if verify_json(data):
-            transactions.insert(data)
+            if isinstance(data, list):
+                transactions.insert_many(data)
+            elif isinstance(data, dict):
+                transactions.insert_one(data)
             return jsonify(
                 result="Success",
                 status="200",
