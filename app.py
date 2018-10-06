@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, render_template
 from flask_pymongo import PyMongo
 from bson.json_util import dumps
+from jsonschema import validate, ValidationError
 import hashlib
 
 
@@ -13,7 +14,39 @@ transactions = mongo.db.transactions
 
 # md5(abc12345) = d6b0ab7f1c8ab8f514db9a6d85de160a
 MD5_HASHED_PASSWORD = "d6b0ab7f1c8ab8f514db9a6d85de160a"
-
+TRANSFORMATION_SCHEMA = {
+    "properties": {
+        "date": {
+            "type": "string"
+        },
+        "item": {
+            "type": "string"
+        },
+        "qte": {
+            "type": "number"
+        },
+        "unit": {
+            "type": "string"
+        },
+        "total": {
+            "type": "number"
+        },
+        "stotal": {
+            "type": "number"
+        },
+        "tax": {
+            "type": "number"
+        },
+        "job_id": {
+            "type": "number"
+        },
+        "type": {
+            "type": "string"
+        }
+    },
+    "required": ["date", "item", "qte", "unit"],
+    "additionalProperties": False
+}
 
 # ----- Interface Graphique -----
 
@@ -151,7 +184,12 @@ def delete_one_transaction(trans_id):
 
 
 def verify_transaction(item):
-    return True
+    try:
+        validate(item, TRANSFORMATION_SCHEMA)
+    except ValidationError:
+        return False
+    else:
+        return True
 
 
 def verify_json(data):
