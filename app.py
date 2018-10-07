@@ -10,8 +10,6 @@ application.config["JSON_SORT_KEYS"] = False
 application.config["MONGO_URI"] = "mongodb://127.0.0.1:27017/inventory"
 mongo = PyMongo(application)
 transactions = mongo.db.transactions
-purchase = mongo.db.purchase
-transform = mongo.db.transform
 
 
 # md5(abc12345) = d6b0ab7f1c8ab8f514db9a6d85de160a
@@ -100,6 +98,8 @@ TRANSFORM_SCHEMA = {
     "required": ["date", "item", "qte", "unit", "job_id", "type"],
     "additionalProperties": False
 }
+DATE_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
+               "October", "November", "December"]
 
 
 # ------------- API -------------
@@ -162,7 +162,7 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    test = total_cost_given_date_and_category("3 March 2018", "Consumable", False)
+    test = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018", False)
     return dumps(transactions.find())
 
 
@@ -221,6 +221,7 @@ def delete_one_transaction(trans_id):
 
 # ---------- Fonctions ----------
 
+#
 def verify_passwd(password):
     if password == MD5_HASHED_PASSWORD:
         return jsonify(
@@ -236,6 +237,7 @@ def verify_passwd(password):
         ), 401
 
 
+#
 def validate_json(data):
     if isinstance(data, list):
         for i in range(len(data)):
@@ -249,6 +251,7 @@ def validate_json(data):
     return True
 
 
+#
 def validate_transaction(item):
     try:
         validate(item, TRANSACTION_SCHEMA)
@@ -256,16 +259,6 @@ def validate_transaction(item):
         return False
     else:
         return True
-
-
-#
-def verify_collection(item):
-    data_transactions = transactions.find({})
-    for item in data_transactions:
-        if validate_purchase(item):
-            purchase.insert_one(item)
-        elif validate_transform(item):
-            transform.insert_one(item)
 
 
 #
@@ -323,8 +316,10 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
         {"$match": {"date": date, "item": {"$regex": category, "$options": "i"}, "job_id": None}},
         {"$project": {"_id": 0, "date": 1, "category": category, "cost": tax_field,
                       "qte": "$qte", "unit": "$unit"}},
-        {"$group": {"_id": {"date": "$date", "category": "$category", "unit": "$unit"},
-                    "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
+        {"$group": {"_id": {"date": "$date", "category": "$category",
+                            "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
+                    "total cost": {"$sum": "$cost"},
+                    "total qte": {"$sum": {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}}}},
         {"$project": {"_id": 0, "date": "$_id.date", "category": "$_id.category", "unit": "$_id.unit",
                       "avg cost": {"$divide": ["$total cost", "$total qte"]}}}
     ]
@@ -340,10 +335,38 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
         return ans
 
 
-# L'image à une date précise de la quantité restante, en unité d'utilisation, des matières
-# premières.
-def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
-    return 0
+# L'image à une date précise de la quantité restante, en unité d'utilisation,
+# des matières premières.
+def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date, tax=True):
+    if tax:
+        tax_field = "$total"
+    else:
+        tax_field = "$stotal"
+    pipeline = [
+        {"$match": {"job_id": None}},
+        {"$group": {"_id": {"date": "$date", "item": "$item", "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
+                    "total qte": {"$sum": {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}}}},
+        {"$match": {}}
+    ]
+    req = list(transactions.aggregate(pipeline))
+    if not req:
+        return jsonify(
+            result="Failure",
+            status="400",
+            message="There are no transactions with the given date"
+        ), 400
+    else:
+        ans = req[0]
+        return ans
+
+
+def verify_date(date):
+    elements = date.split(" ")
+    year = elements[0]
+    month = DATE_MONTHS[0:DATE_MONTHS.index(elements[1])+1]
+    day = elements[2]
+    date = [year, month, day]
+    return date
 
 
 # ---------- Exécution ----------
