@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request, render_template
 from flask_pymongo import PyMongo
 from bson.json_util import dumps
 from jsonschema import validate, ValidationError
+from datetime import date
 import hashlib
 
 
@@ -360,13 +361,11 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date, tax=True
         return ans
 
 
-def verify_date(date):
-    elements = date.split(" ")
-    year = elements[0]
-    month = DATE_MONTHS[0:DATE_MONTHS.index(elements[1])+1]
-    day = elements[2]
-    date = [year, month, day]
-    return date
+# Met à jour le format d'une date
+def convert_date(old_date):
+    new_date = old_date.split(" ")
+    new_date = date(int(new_date[2]), DATE_MONTHS.index(new_date[1])+1, int(new_date[0]))
+    return new_date
 
 
 # ---------- Exécution ----------
