@@ -164,7 +164,9 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    test = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
+    test1 = total_cost_given_date_and_category("3 January 2018", "HE")
+    test2 = avg_cost_weighted_by_unit_given_date_and_category("3 January 2018", "HE")
+    test3 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("7 August 2018")
     return dumps(transactions.find())
 
 
@@ -319,7 +321,8 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
                       "qte": "$qte", "unit": "$unit"}},
         {"$group": {"_id": {"date": "$date", "category": "$category",
                             "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
-                    "total cost": {"$sum": "$cost"},
+                    # "total cost": {"$sum": {"$multiply": ["$cost", {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}]}},
+                    "total cost" : {"$sum": "$cost"},  # Moyenne arithmétique
                     "total qte": {"$sum": {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}}}},
         {"$project": {"_id": 0, "date": "$_id.date", "category": "$_id.category", "unit": "$_id.unit",
                       "avg cost": {"$divide": ["$total cost", "$total qte"]}}}
@@ -340,7 +343,7 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
 # des matières premières.
 def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     # Calculer la quantité de matériaux achetées
-    pipeline_pur = [
+    pipeline_buy = [
         {"$match": {"date": {"$lte": convert_date(date)}, "job_id": None}},
         {"$group": {
             "_id": {"date": "$date", "item": "$item", "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
@@ -351,10 +354,10 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}},
         {"$sort": {"item": 1}}
     ]
-    req_pur = list(transactions.aggregate(pipeline_pur))
+    req_buy = list(transactions.aggregate(pipeline_buy))
 
     # Calculer la quantité de matériaux utilisées
-    pipeline_tra = [
+    pipeline_use = [
         {"$match": {"date": {"$lte": convert_date(date)}, "tax": None, "type": "usage"}},
         {"$group": {
             "_id": {"date": "$date", "item": "$item", "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
@@ -365,9 +368,9 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}},
         {"$sort": {"item": 1}}
     ]
-    req_tra = list(transactions.aggregate(pipeline_tra))
+    req_use = list(transactions.aggregate(pipeline_use))
 
-    if not req_pur or not req_tra:
+    if not req_buy or not req_use:
         return jsonify(
             result="Failure",
             status="400",
@@ -376,7 +379,17 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     else:
         # Calculer la quantité de matériaux restants après utilisation
         ans = []
-
+        i = 0
+        for bought in req_buy:
+            ans.append(bought)
+            for used in req_use:
+                if bought["item"] == used["item"]:
+                    if bought["unit"] == used["unit"]:
+                        ans[i]["total qte"] = bought["total qte"] - used["total qte"]
+                    else:  # À corriger à l'aide de masse volumique
+                        ans[i]["unit"] = ans[i]["unit"]
+                        ans[i]["total qte"] = ans[i]["total qte"]
+            i += 1
         return ans
 
 
