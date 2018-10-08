@@ -119,6 +119,7 @@ def index():
 def add_many_transactions():
     if request.headers['Content-Type'] == "application/json":
         data = request.get_json()
+        data = update_dates_format_db(data)  # convert date to str(datetime)
         if validate_json(data):
             if isinstance(data, list):
                 transactions.insert_many(data)
@@ -163,7 +164,7 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    test = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018", False)
+    test = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps(transactions.find())
 
 
@@ -283,14 +284,13 @@ def validate_transform(item):
 
 
 # Le coût total à une date précise pour une catégorie de matériel.
-# Ajoute les taxes au coûtt par défaut
 def total_cost_given_date_and_category(date, category, tax=True):
     if tax:
         tax_field = "$total"
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": date, "item": {"$regex": category, "$options": "i"}, "job_id": None}},
+        {"$match": {"date": convert_date(date), "item": {"$regex": category, "$options": "i"}, "job_id": None}},
         {"$project": {"_id": 0, "date": 1, "category": category, "cost": tax_field}},
         {"$group": {"_id": {"date": "$date", "category": "$category"}, "total cost": {"$sum": "$cost"}}}
     ]
@@ -314,7 +314,7 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": date, "item": {"$regex": category, "$options": "i"}, "job_id": None}},
+        {"$match": {"date": convert_date(date), "item": {"$regex": category, "$options": "i"}, "job_id": None}},
         {"$project": {"_id": 0, "date": 1, "category": category, "cost": tax_field,
                       "qte": "$qte", "unit": "$unit"}},
         {"$group": {"_id": {"date": "$date", "category": "$category",
@@ -338,34 +338,78 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
 
 # L'image à une date précise de la quantité restante, en unité d'utilisation,
 # des matières premières.
-def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date, tax=True):
-    if tax:
-        tax_field = "$total"
-    else:
-        tax_field = "$stotal"
-    pipeline = [
-        {"$match": {"job_id": None}},
-        {"$group": {"_id": {"date": "$date", "item": "$item", "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
-                    "total qte": {"$sum": {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}}}},
-        {"$match": {}}
+def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
+    # Calculer la quantité de matériaux achetées
+    pipeline_pur = [
+        {"$match": {"date": {"$lte": convert_date(date)}, "job_id": None}},
+        {"$group": {
+            "_id": {"date": "$date", "item": "$item", "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
+            "total qte": {"$sum": {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}}}},
+        {"$group": {
+            "_id": {"item": "$_id.item", "unit": "$_id.unit"},
+            "total qte": {"$sum": "$total qte"}}},
+        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}},
+        {"$sort": {"item": 1}}
     ]
-    req = list(transactions.aggregate(pipeline))
-    if not req:
+    req_pur = list(transactions.aggregate(pipeline_pur))
+
+    # Calculer la quantité de matériaux utilisées
+    pipeline_tra = [
+        {"$match": {"date": {"$lte": convert_date(date)}, "tax": None, "type": "usage"}},
+        {"$group": {
+            "_id": {"date": "$date", "item": "$item", "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
+            "total qte": {"$sum": {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}}}},
+        {"$group": {
+            "_id": {"item": "$_id.item", "unit": "$_id.unit"},
+            "total qte": {"$sum": "$total qte"}}},
+        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}},
+        {"$sort": {"item": 1}}
+    ]
+    req_tra = list(transactions.aggregate(pipeline_tra))
+
+    if not req_pur or not req_tra:
         return jsonify(
             result="Failure",
             status="400",
-            message="There are no transactions with the given date"
+            message="There are no transactions with the given date or before it"
         ), 400
     else:
-        ans = req[0]
+        # Calculer la quantité de matériaux restants après utilisation
+        ans = []
+
         return ans
 
 
-# Met à jour le format d'une date
+# Convertit le format d'une date donnée
 def convert_date(old_date):
     new_date = old_date.split(" ")
     new_date = date(int(new_date[2]), DATE_MONTHS.index(new_date[1])+1, int(new_date[0]))
-    return new_date
+    new_date = str(new_date)
+    return str(new_date)
+
+
+# Retourne une date donnée à son format original
+def revert_date(new_date):
+    old_date = new_date.split("-")
+    old_date = old_date[2].lstrip("0") + " " + DATE_MONTHS[int(old_date[1])-1] + " " + old_date[0]
+    return old_date
+
+
+# Met à jour le format des dates dans la base de données
+def update_dates_format_db(data):
+    if isinstance(data, list):
+        for item in data:
+            item["date"] = convert_date(item["date"])
+        return data
+    elif isinstance(data, dict):
+        data["date"] = convert_date(data["date"])
+        return data
+    else:
+        return jsonify(
+            result="Failure",
+            status="405",
+            message="The wrong type of content was sent"
+        ), 405
 
 
 # ---------- Exécution ----------
