@@ -164,9 +164,14 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
+    test = list(transactions.aggregate([
+        {"$match": {"date": "2018-01-03"}},
+        {"$project": {"_id": 0, "date": 1, "item": 1, "qte": 1, "unit": 1, "usage": "$usage"}},
+        {"$sort": {"item": 1}}
+    ]))
     test1 = total_cost_given_date_and_category("3 January 2018", "HE")
     test2 = avg_cost_weighted_by_unit_given_date_and_category("3 January 2018", "HE")
-    test3 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("7 August 2018")
+    test3 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps(transactions.find())
 
 
@@ -322,7 +327,7 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
         {"$group": {"_id": {"date": "$date", "category": "$category",
                             "unit": {"$cond": [{"$eq": ["$unit", "L"]}, "ml", "$unit"]}},
                     # "total cost": {"$sum": {"$multiply": ["$cost", {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}]}},
-                    "total cost" : {"$sum": "$cost"},  # Moyenne arithmétique
+                    "total cost": {"$sum": "$cost"},  # On requis la masse volumique ci-dessous
                     "total qte": {"$sum": {"$cond": [{"$eq": ["$unit", "L"]}, {"$multiply": ["$qte", 1000]}, "$qte"]}}}},
         {"$project": {"_id": 0, "date": "$_id.date", "category": "$_id.category", "unit": "$_id.unit",
                       "avg cost": {"$divide": ["$total cost", "$total qte"]}}}
@@ -379,18 +384,37 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     else:
         # Calculer la quantité de matériaux restants après utilisation
         ans = []
-        i = 0
         for bought in req_buy:
-            ans.append(bought)
             for used in req_use:
                 if bought["item"] == used["item"]:
+                    # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
+                    is_added = index_of_item(ans, bought["item"])
+                    if is_added == -1:
+                        ans.append(bought)
+                    # On doit être certain que 'ans' est accéder depuis le field 'item'
+                    i = index_of_item(ans, bought["item"])
                     if bought["unit"] == used["unit"]:
-                        ans[i]["total qte"] = bought["total qte"] - used["total qte"]
+                        # Soustraire la quantité utilisé de l'élément dans 'ans'
+                        ans[i]["total qte"] -= used["total qte"]
                     else:  # À corriger à l'aide de masse volumique
-                        ans[i]["unit"] = ans[i]["unit"]
-                        ans[i]["total qte"] = ans[i]["total qte"]
-            i += 1
+                        masse_volumique = 1
+                        ans[i]["unit"] = used["unit"]
+                        if used["unit"] == "ml":
+                            ans[i]["total qte"] -= used["total qte"] * masse_volumique
+                        elif used["unit"] == "g":
+                            ans[i]["total qte"] -= used["total qte"] / masse_volumique
         return ans
+
+
+# Extrait l'index de l'item dans 'ans'
+def index_of_item(ans, item):
+    if len(ans) != 0:
+        i = 0
+        for element in ans:
+            if element["item"] == item:
+                return i
+            i += 1
+    return -1
 
 
 # Convertit une date donnée dans le format original au nouveau format
