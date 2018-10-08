@@ -380,7 +380,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         return ans
 
 
-# Convertit le format d'une date donnée
+# Convertit une date donnée dans le format original au nouveau format
 def convert_date(old_date):
     new_date = old_date.split(" ")
     new_date = date(int(new_date[2]), DATE_MONTHS.index(new_date[1])+1, int(new_date[0]))
@@ -388,7 +388,7 @@ def convert_date(old_date):
     return str(new_date)
 
 
-# Retourne une date donnée à son format original
+# Retourne une date donnée dans le nouveau format au format original
 def revert_date(new_date):
     old_date = new_date.split("-")
     old_date = old_date[2].lstrip("0") + " " + DATE_MONTHS[int(old_date[1])-1] + " " + old_date[0]
