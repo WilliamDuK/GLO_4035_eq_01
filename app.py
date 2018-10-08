@@ -164,8 +164,8 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    test1 = total_cost_given_date_and_category("3 January 2018", "HE")
-    test2 = avg_cost_weighted_by_unit_given_date_and_category("3 January 2018", "HE")
+    test1 = total_cost_given_date_and_category("15 July 2018", "HE")
+    test2 = avg_cost_weighted_by_unit_given_date_and_category("10 September 2018", "Base Oil")
     test3 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps(transactions.find())
 
@@ -292,9 +292,9 @@ def total_cost_given_date_and_category(date, category, tax=True):
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": convert_date(date), "item": {"$regex": category, "$options": "i"}, "job_id": None}},
-        {"$project": {"_id": 0, "date": 1, "category": category, "cost": tax_field}},
-        {"$group": {"_id": {"date": "$date", "category": "$category"}, "total cost": {"$sum": "$cost"}}}
+        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": "i"}, "job_id": None}},
+        {"$project": {"_id": 0, "cost": tax_field}},
+        {"$group": {"_id": None, "total cost": {"$sum": "$cost"}}}
     ]
     req = list(transactions.aggregate(pipeline))
     if not req:
@@ -316,13 +316,13 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": convert_date(date), "item": {"$regex": category, "$options": "i"}, "job_id": None}},
-        {"$project": {"_id": 0, "date": 1, "category": category, "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
-        {"$group": {"_id": {"date": "$date", "category": "$category", "unit": "$unit"},
-                    "total cost": {"$sum": "$cost"},
-                    "total qte": {"$sum": "$qte"}}},  # On requis la masse volumique ci-dessous
-        {"$project": {"_id": 0, "date": "$_id.date", "category": "$_id.category", "unit": "$_id.unit",
-                      "avg cost": {"$divide": ["$total cost", "$total qte"]}}}
+        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": "i"}, "job_id": None}},
+        {"$project": {"_id": 0, "category": "$item", "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
+        {"$group": {"_id": {"category": "$category", "unit": "$unit"},
+                    "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
+        {"$project": {"_id": 0, "category": "$_id.category", "unit": "$_id.unit",
+                      "avg cost": {"$divide": ["$total cost", "$total qte"]}}},
+        # On requis la masse volumique des matières premières ici
     ]
     req = list(transactions.aggregate(pipeline))
     if not req:
@@ -343,8 +343,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     pipeline_buy = [
         {"$match": {"date": {"$lte": convert_date(date)}, "job_id": None}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
-        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}},
-        {"$sort": {"item": 1}}
+        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
     ]
     req_buy = list(transactions.aggregate(pipeline_buy))
 
@@ -352,8 +351,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     pipeline_use = [
         {"$match": {"date": {"$lte": convert_date(date)}, "tax": None, "type": "usage"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
-        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}},
-        {"$sort": {"item": 1}}
+        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
     ]
     req_use = list(transactions.aggregate(pipeline_use))
 
