@@ -43,9 +43,18 @@ TRANSACTION_SCHEMA = {
         },
         "type": {
             "type": "string"
+        },
+        "information": {
+            "type": "string"
+        },
+        "g": {
+            "type": "number"
+        },
+        "ml": {
+            "type": "number"
         }
     },
-    "required": ["date", "item", "qte", "unit"],
+    "required": ["item"],
     "additionalProperties": False
 }
 PURCHASE_SCHEMA = {
@@ -97,6 +106,24 @@ TRANSFORM_SCHEMA = {
         }
     },
     "required": ["date", "item", "qte", "unit", "job_id", "type"],
+    "additionalProperties": False
+}
+DENSITY_SCHEMA = {
+    "properties": {
+        "information": {
+            "type": "string"
+        },
+        "item": {
+            "type": "string"
+        },
+        "g": {
+            "type": "number"
+        },
+        "ml": {
+            "type": "number"
+        }
+    },
+    "required": ["information", "item", "g", "ml"],
     "additionalProperties": False
 }
 DATE_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
@@ -285,6 +312,16 @@ def validate_transform(item):
         return True
 
 
+#
+def validate_density(item):
+    try:
+        validate(item, DENSITY_SCHEMA)
+    except ValidationError:
+        return False
+    else:
+        return True
+
+
 # Le coût total à une date précise pour une catégorie de matériel.
 def total_cost_given_date_and_category(date, category, tax=True):
     if tax:
@@ -421,10 +458,12 @@ def revert_date(new_date):
 def update_dates_format_db(data):
     if isinstance(data, list):
         for item in data:
-            item["date"] = convert_date(item["date"])
+            if not validate_density(item):
+                item["date"] = convert_date(item["date"])
         return data
     elif isinstance(data, dict):
-        data["date"] = convert_date(data["date"])
+        if not validate_density(data):
+            data["date"] = convert_date(data["date"])
         return data
     else:
         return jsonify(
