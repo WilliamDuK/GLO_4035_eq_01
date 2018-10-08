@@ -192,7 +192,7 @@ def drop_all_collections():
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
     test1 = total_cost_given_date_and_category("15 July 2018", "HE")
-    test2 = avg_cost_weighted_by_unit_given_date_and_category("10 September 2018", "Base Oil")
+    test2 = avg_cost_weighted_by_unit_given_date_and_category("10 September 2018", "Consumable")
     test3 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps(transactions.find())
 
@@ -359,7 +359,7 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
                     "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "category": "$_id.category", "unit": "$_id.unit",
                       "avg cost": {"$divide": ["$total cost", "$total qte"]}}},
-        # On requis la masse volumique des matières premières ici
+        # À corriger à l'aide de masse volumique
     ]
     req = list(transactions.aggregate(pipeline))
     if not req:
