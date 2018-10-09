@@ -192,8 +192,9 @@ def drop_all_collections():
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
     test1 = total_cost_given_date_and_category("15 July 2018", "HE")
-    test2 = avg_cost_weighted_by_unit_given_date_and_category("10 September 2018", "Consumable")
-    test3 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2019")
+    test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
+    test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
+    test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2019")
     return dumps(transactions.find())
 
 
@@ -329,7 +330,7 @@ def total_cost_given_date_and_category(date, category, tax=True):
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": "i"}, "job_id": None}},
+        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
         {"$project": {"_id": 0, "cost": tax_field}},
         {"$group": {"_id": None, "total cost": {"$sum": "$cost"}}}
     ]
@@ -345,22 +346,20 @@ def total_cost_given_date_and_category(date, category, tax=True):
         return ans
 
 
-# Le coût moyen d'acquisition, pondéré par l'unité d'acquisition, à une date précise d'une
-# catégorie de matériel.
-# Il semble que c'est plutôt l'unité d'utilisation
-def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
+# Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
+# à une date précise d'une catégorie de matériel.
+def avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax=True):
     if tax:
         tax_field = "$total"
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": "i"}, "job_id": None}},
-        {"$project": {"_id": 0, "category": "$item", "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
-        {"$group": {"_id": {"category": "$category", "unit": "$unit"},
+        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
+        {"$project": {"_id": 0, "item": 1, "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
+        {"$group": {"_id": {"item": "$item", "unit": "$unit"},
                     "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
-        {"$project": {"_id": 0, "category": "$_id.category", "unit": "$_id.unit",
-                      "avg cost": {"$divide": ["$total cost", "$total qte"]}}},
-        # À corriger à l'aide de masse volumique
+        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit",
+                      "total cost": 1, "total qte": 1}}
     ]
     req = list(transactions.aggregate(pipeline))
     if not req:
@@ -370,7 +369,72 @@ def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
             message="There are no transactions with the given date and category"
         ), 400
     else:
-        ans = str(req[0]["avg cost"]) + " $/" + req[0]["unit"]
+        # Vérification qu'on a pas deux fois le même 'item', sinon sommation
+        ans = []
+        for bought in req:
+            # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
+            is_added = get_item_index(ans, bought["item"])
+            if is_added == -1:
+                ans.append(bought)
+            else:
+                masse_volumique = get_item_density(bought["item"])
+                if ans[is_added]["unit"] == bought["unit"]:
+                    ans[is_added]["total cost"] += bought["total cost"]
+                    ans[is_added]["total qte"] += bought["total qte"]
+                elif bought["unit"] == "ml":
+                    ans[is_added]["total cost"] += bought["total cost"]
+                    ans[is_added]["total qte"] += bought["total qte"] * masse_volumique
+                elif bought["unit"] == "g":
+                    ans[is_added]["total cost"] += bought["total cost"]
+                    ans[is_added]["total qte"] += bought["total qte"] / masse_volumique
+        # Calcul des coûts moyens
+        i = 0
+        for item in ans:
+            ans[i]["avg cost"] = round(ans[i]["total cost"] / ans[i]["total qte"], 2)
+            del ans[i]["total cost"]
+            del ans[i]["total qte"]
+            ans[i]["unit"] = "$/" + ans[i]["unit"]
+            i += 1
+        # Vider la list req
+        del req[:]
+        return ans
+
+
+# Le coût moyen d'acquisition, pondéré par l'unité d'utilisation,
+# à une date précise d'une catégorie de matériel.
+def avg_cost_weighted_by_unit_use_given_date_and_category(date, category, tax=True):
+    if tax:
+        tax_field = "$total"
+    else:
+        tax_field = "$stotal"
+    req_buy = avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax)
+    pipeline = [
+        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": ""}, "tax": None,
+                    "unit": {"$ne": "unit"}}},
+        {"$project": {"_id": 0, "item": 1, "unit": 1}},
+        {"$group": {"_id": {"item": "$item"}, "unit": {"$addToSet": "$unit"}}},
+        {"$project": {"_id": 0, "item": "$_id.item", "unit": {"$arrayElemAt": ["$unit", 0]}}}
+    ]
+    req_use = list(transactions.aggregate(pipeline))
+    if not req_buy or not req_use:
+        return jsonify(
+            result="Failure",
+            status="400",
+            message="There are no transactions with the given date and category"
+        ), 400
+    else:
+        ans = req_buy
+        for used in req_use:
+            # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
+            i = get_item_index(ans, used["item"])
+            if i != -1:
+                if ans[i]["unit"] != "$/" + used["unit"]:
+                    masse_volumique = get_item_density(used["item"])
+                    ans[i]["unit"] = "$/" + used["unit"]
+                    if used["unit"] == "$/ml":
+                        ans[i]["avg cost"] /= masse_volumique
+                    elif used["unit"] == "$/g":
+                        ans[i]["avg cost"] *= masse_volumique
         return ans
 
 
