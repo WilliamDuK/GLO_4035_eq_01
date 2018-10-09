@@ -193,7 +193,7 @@ def drop_all_collections():
 def get_all_transactions():
     test1 = total_cost_given_date_and_category("15 July 2018", "HE")
     test2 = avg_cost_weighted_by_unit_given_date_and_category("10 September 2018", "Consumable")
-    test3 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
+    test3 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2019")
     return dumps(transactions.find())
 
 
@@ -347,6 +347,7 @@ def total_cost_given_date_and_category(date, category, tax=True):
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition, à une date précise d'une
 # catégorie de matériel.
+# Il semble que c'est plutôt l'unité d'utilisation
 def avg_cost_weighted_by_unit_given_date_and_category(date, category, tax=True):
     if tax:
         tax_field = "$total"
@@ -405,22 +406,30 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
             for used in req_use:
                 if bought["item"] == used["item"]:
                     # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-                    is_added = index_of_item(ans, bought["item"])
+                    is_added = get_item_index(ans, bought["item"])
                     if is_added == -1:
                         ans.append(bought)
                     # On doit être certain que 'ans' est accéder depuis le field 'item'
-                    i = index_of_item(ans, bought["item"])
+                    i = get_item_index(ans, bought["item"])
                     if bought["unit"] == used["unit"]:
                         # Soustraire la quantité utilisé de l'élément dans 'ans'
                         ans[i]["total qte"] -= used["total qte"]
                     else:
-                        masse_volumique = 0.9  # À corriger à l'aide de masse volumique
+                        masse_volumique = get_item_density(used["item"])
                         ans[i]["unit"] = used["unit"]
                         if used["unit"] == "ml":
                             ans[i]["total qte"] -= used["total qte"] * masse_volumique
                         elif used["unit"] == "g":
                             ans[i]["total qte"] -= used["total qte"] / masse_volumique
+                    ans[i]["total qte"] = round(ans[i]["total qte"], 2)  # Arrondissement nécessaire?
         return ans
+
+
+# Retourne la masse volumique d'un élément
+def get_item_density(item):
+    item = transactions.find_one({"information": "density", "item": item})
+    density = item["g"] / item["ml"]
+    return density
 
 
 # Construction de la liste des matières premières
@@ -429,7 +438,7 @@ def list_raw_materials():
 
 
 # Extrait l'index de l'item dans 'ans'
-def index_of_item(ans, item):
+def get_item_index(ans, item):
     if len(ans) != 0:
         i = 0
         for element in ans:
