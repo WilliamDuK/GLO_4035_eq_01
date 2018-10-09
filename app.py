@@ -191,10 +191,10 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    test1 = total_cost_given_date_and_category("15 July 2018", "HE")
-    test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
-    test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
-    test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2019")
+    # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
+    # test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
+    # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
+    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps(transactions.find())
 
 
@@ -324,15 +324,16 @@ def validate_density(item):
 
 
 # Le coût total à une date précise pour une catégorie de matériel.
-def total_cost_given_date_and_category(date, category, tax=True):
+def total_cost_given_date_and_category(date, category="Consumable", tax=True):
     if tax:
         tax_field = "$total"
     else:
         tax_field = "$stotal"
     pipeline = [
         {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
-        {"$project": {"_id": 0, "cost": tax_field}},
-        {"$group": {"_id": None, "total cost": {"$sum": "$cost"}}}
+        {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
+        {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
+        {"$project": {"_id": 0, "item": "$_id", "total cost": 1}}
     ]
     req = list(transactions.aggregate(pipeline))
     if not req:
@@ -342,13 +343,16 @@ def total_cost_given_date_and_category(date, category, tax=True):
             message="There are no transactions with the given date and category"
         ), 400
     else:
-        ans = str(req[0]["total cost"]) + " $"
+        ans = []
+        for bought in req:
+            ans.append(bought)
+            ans[-1]["unit"] = "$"
         return ans
 
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
 # à une date précise d'une catégorie de matériel.
-def avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax=True):
+def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consumable", tax=True):
     if tax:
         tax_field = "$total"
     else:
@@ -402,14 +406,14 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax=Tr
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'utilisation,
 # à une date précise d'une catégorie de matériel.
-def avg_cost_weighted_by_unit_use_given_date_and_category(date, category, tax=True):
+def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consumable", tax=True):
     if tax:
         tax_field = "$total"
     else:
         tax_field = "$stotal"
     req_buy = avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax)
     pipeline = [
-        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": ""}, "tax": None,
+        {"$match": {"item": {"$regex": category, "$options": ""}, "tax": None,
                     "unit": {"$ne": "unit"}}},
         {"$project": {"_id": 0, "item": 1, "unit": 1}},
         {"$group": {"_id": {"item": "$item"}, "unit": {"$addToSet": "$unit"}}},
