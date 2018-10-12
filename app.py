@@ -392,13 +392,11 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
                     ans[is_added]["total cost"] += bought["total cost"]
                     ans[is_added]["total qte"] += bought["total qte"] / masse_volumique
         # Calcul des coûts moyens
-        i = 0
         for item in ans:
-            ans[i]["avg cost"] = round(ans[i]["total cost"] / ans[i]["total qte"], 2)
-            del ans[i]["total cost"]
-            del ans[i]["total qte"]
-            ans[i]["unit"] = "$/" + ans[i]["unit"]
-            i += 1
+            item["avg cost"] = round(item["total cost"] / item["total qte"], 2)
+            del item["total cost"]
+            del item["total qte"]
+            item["unit"] = "$/" + item["unit"]
         # Vider la list req
         del req[:]
         return ans
