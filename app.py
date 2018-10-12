@@ -144,7 +144,8 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""},
+                    "job_id": None}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
         {"$project": {"_id": 0, "item": "$_id", "total cost": 1}}
@@ -172,7 +173,8 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""},
+                    "job_id": None}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"},
                     "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
@@ -219,10 +221,6 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
 # Le coût moyen d'acquisition, pondéré par l'unité d'utilisation,
 # à une date précise d'une catégorie de matériel.
 def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consumable", tax=True):
-    if tax:
-        tax_field = "$total"
-    else:
-        tax_field = "$stotal"
     req_buy = avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax)
     pipeline = [
         {"$match": {"item": {"$regex": category, "$options": ""}, "tax": None,
