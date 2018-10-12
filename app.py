@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, request, render_template
 from flask_pymongo import PyMongo
 from bson.json_util import dumps
-from jsonschema import validate, ValidationError
-from datetime import date
 import hashlib
+import validations
+import dates
 
 
 application = Flask("my_glo4035_application")
@@ -11,123 +11,6 @@ application.config["JSON_SORT_KEYS"] = False
 application.config["MONGO_URI"] = "mongodb://127.0.0.1:27017/inventory"
 mongo = PyMongo(application)
 transactions = mongo.db.transactions
-
-
-# md5(abc12345) = d6b0ab7f1c8ab8f514db9a6d85de160a
-MD5_HASHED_PASSWORD = "d6b0ab7f1c8ab8f514db9a6d85de160a"
-TRANSACTION_SCHEMA = {
-    "properties": {
-        "date": {
-            "type": "string"
-        },
-        "item": {
-            "type": "string"
-        },
-        "qte": {
-            "type": "number"
-        },
-        "unit": {
-            "type": "string"
-        },
-        "total": {
-            "type": "number"
-        },
-        "stotal": {
-            "type": "number"
-        },
-        "tax": {
-            "type": "number"
-        },
-        "job_id": {
-            "type": "number"
-        },
-        "type": {
-            "type": "string"
-        },
-        "information": {
-            "type": "string"
-        },
-        "g": {
-            "type": "number"
-        },
-        "ml": {
-            "type": "number"
-        }
-    },
-    "required": ["item"],
-    "additionalProperties": False
-}
-PURCHASE_SCHEMA = {
-    "properties": {
-        "date": {
-            "type": "string"
-        },
-        "item": {
-            "type": "string"
-        },
-        "qte": {
-            "type": "number"
-        },
-        "unit": {
-            "type": "string"
-        },
-        "total": {
-            "type": "number"
-        },
-        "stotal": {
-            "type": "number"
-        },
-        "tax": {
-            "type": "number"
-        }
-    },
-    "required": ["date", "item", "qte", "unit", "total", "stotal", "tax"],
-    "additionalProperties": False
-}
-TRANSFORM_SCHEMA = {
-    "properties": {
-        "date": {
-            "type": "string"
-        },
-        "item": {
-            "type": "string"
-        },
-        "qte": {
-            "type": "number"
-        },
-        "unit": {
-            "type": "string"
-        },
-        "job_id": {
-            "type": "number"
-        },
-        "type": {
-            "type": "string"
-        }
-    },
-    "required": ["date", "item", "qte", "unit", "job_id", "type"],
-    "additionalProperties": False
-}
-DENSITY_SCHEMA = {
-    "properties": {
-        "information": {
-            "type": "string"
-        },
-        "item": {
-            "type": "string"
-        },
-        "g": {
-            "type": "number"
-        },
-        "ml": {
-            "type": "number"
-        }
-    },
-    "required": ["information", "item", "g", "ml"],
-    "additionalProperties": False
-}
-DATE_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
-               "October", "November", "December"]
 
 
 # ------------- API -------------
@@ -146,8 +29,8 @@ def index():
 def add_many_transactions():
     if request.headers['Content-Type'] == "application/json":
         data = request.get_json()
-        data = update_dates_format_db(data)  # convert date to str(datetime)
-        if validate_json(data):
+        data = dates.update_dates_format_db(data)  # convert date to str(datetime)
+        if validations.validate_json(data):
             if isinstance(data, list):
                 transactions.insert_many(data)
             elif isinstance(data, dict):
@@ -177,7 +60,7 @@ def add_many_transactions():
 def drop_all_collections():
     if request.headers["Content-Type"] == "application/json":
         passwd = hashlib.md5(request.get_json()["password"].encode("utf-8")).hexdigest()
-        res = verify_passwd(passwd)
+        res = validations.verify_passwd(passwd)
         if res[0].json["result"] == "Success":
             transactions.drop()  # Doit dropper toutes les collections
         return res
@@ -253,75 +136,6 @@ def delete_one_transaction(trans_id):
 
 # ---------- Fonctions ----------
 
-# Vérification du mot de passe permettant l'accès au vidage de toutes les collections
-def verify_passwd(password):
-    if password == MD5_HASHED_PASSWORD:
-        return jsonify(
-            result="Success",
-            status="200",
-            message="Correct password"
-        ), 200
-    else:
-        return jsonify(
-            result="Failure",
-            status="401",
-            message="Wrong password"
-        ), 401
-
-
-# Vérification de chacun des documents JSON un à la fois
-def validate_json(data):
-    if isinstance(data, list):
-        for i in range(len(data)):
-            if not(validate_transaction(data[i])):
-                return False
-    elif isinstance(data, dict):
-        if not(validate_transaction(data)):
-            return False
-    else:
-        return False
-    return True
-
-
-# Vérifie si l'objet reçu en paramètre est Transaction
-def validate_transaction(item):
-    try:
-        validate(item, TRANSACTION_SCHEMA)
-    except ValidationError:
-        return False
-    else:
-        return True
-
-
-# Vérifie si l'objet reçu en paramètre est Purchase
-def validate_purchase(item):
-    try:
-        validate(item, PURCHASE_SCHEMA)
-    except ValidationError:
-        return False
-    else:
-        return True
-
-
-# Vérifie si l'objet reçu en paramètre est Transform
-def validate_transform(item):
-    try:
-        validate(item, TRANSFORM_SCHEMA)
-    except ValidationError:
-        return False
-    else:
-        return True
-
-
-# Vérifie si l'objet reçu en paramètre est Density
-def validate_density(item):
-    try:
-        validate(item, DENSITY_SCHEMA)
-    except ValidationError:
-        return False
-    else:
-        return True
-
 
 # Le coût total à une date précise pour une catégorie de matériel.
 def total_cost_given_date_and_category(date, category="Consumable", tax=True):
@@ -330,7 +144,7 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
         {"$project": {"_id": 0, "item": "$_id", "total cost": 1}}
@@ -358,7 +172,7 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}, "job_id": None}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"},
                     "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
@@ -445,7 +259,7 @@ def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consum
 def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     # Calculer la quantité de matériaux achetées
     pipeline_buy = [
-        {"$match": {"date": {"$lte": convert_date(date)}, "job_id": None}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "job_id": None}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
     ]
@@ -453,7 +267,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
 
     # Calculer la quantité de matériaux utilisées
     pipeline_use = [
-        {"$match": {"date": {"$lte": convert_date(date)}, "tax": None, "type": "usage"}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "tax": None, "type": "usage"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
     ]
@@ -532,38 +346,34 @@ def get_item_index(ans, item):
     return -1
 
 
-# Convertit une date donnée dans le format original au nouveau format
-def convert_date(old_date):
-    new_date = old_date.split(" ")
-    new_date = date(int(new_date[2]), DATE_MONTHS.index(new_date[1])+1, int(new_date[0]))
-    new_date = str(new_date)
-    return str(new_date)
+# Retourne une liste contenant seulement les éléments Purchase
+def create_list_purchases():
+    data = transactions.find({}, {"_id": 0})
+    list_purchases = []
+    for item in data:
+        if validations.validate_purchase(item):
+            list_purchases.append(item)
+    return list_purchases
 
 
-# Retourne une date donnée dans le nouveau format au format original
-def revert_date(new_date):
-    old_date = new_date.split("-")
-    old_date = old_date[2].lstrip("0") + " " + DATE_MONTHS[int(old_date[1])-1] + " " + old_date[0]
-    return old_date
+# Retourne une liste contenant seulement les éléments Transform
+def create_list_transformations():
+    data = transactions.find({}, {"_id": 0})
+    list_transformations = []
+    for item in data:
+        if validations.validate_transform(item):
+            list_transformations.append(item)
+    return list_transformations
 
 
-# Met à jour le format des dates dans la base de données
-def update_dates_format_db(data):
-    if isinstance(data, list):
-        for item in data:
-            if not validate_density(item):
-                item["date"] = convert_date(item["date"])
-        return data
-    elif isinstance(data, dict):
-        if not validate_density(data):
-            data["date"] = convert_date(data["date"])
-        return data
-    else:
-        return jsonify(
-            result="Failure",
-            status="405",
-            message="The wrong type of content was sent"
-        ), 405
+# Retourne une liste contenant seulement les éléments Density
+def create_list_densities():
+    data = transactions.find({}, {"_id": 0})
+    list_densities = []
+    for item in data:
+        if validations.validate_density(item):
+            list_densities.append(item)
+    return list_densities
 
 
 # ---------- Exécution ----------
