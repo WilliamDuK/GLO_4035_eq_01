@@ -253,7 +253,7 @@ def delete_one_transaction(trans_id):
 
 # ---------- Fonctions ----------
 
-#
+# Vérification du mot de passe permettant l'accès au vidage de toutes les collections
 def verify_passwd(password):
     if password == MD5_HASHED_PASSWORD:
         return jsonify(
@@ -269,7 +269,7 @@ def verify_passwd(password):
         ), 401
 
 
-#
+# Vérification de chacun des documents JSON un à la fois
 def validate_json(data):
     if isinstance(data, list):
         for i in range(len(data)):
@@ -283,7 +283,7 @@ def validate_json(data):
     return True
 
 
-#
+# Vérifie si l'objet reçu en paramètre est Transaction
 def validate_transaction(item):
     try:
         validate(item, TRANSACTION_SCHEMA)
@@ -293,7 +293,7 @@ def validate_transaction(item):
         return True
 
 
-#
+# Vérifie si l'objet reçu en paramètre est Purchase
 def validate_purchase(item):
     try:
         validate(item, PURCHASE_SCHEMA)
@@ -303,7 +303,7 @@ def validate_purchase(item):
         return True
 
 
-#
+# Vérifie si l'objet reçu en paramètre est Transform
 def validate_transform(item):
     try:
         validate(item, TRANSFORM_SCHEMA)
@@ -313,7 +313,7 @@ def validate_transform(item):
         return True
 
 
-#
+# Vérifie si l'objet reçu en paramètre est Density
 def validate_density(item):
     try:
         validate(item, DENSITY_SCHEMA)
