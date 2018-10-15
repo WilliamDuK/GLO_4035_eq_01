@@ -4,6 +4,7 @@ from bson.json_util import dumps
 import hashlib
 import validations
 import dates
+import commons
 
 
 application = Flask("my_glo4035_application")
@@ -193,7 +194,7 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
         ans = []
         for bought in req:
             # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            is_added = get_item_index(ans, bought["item"])
+            is_added = commons.get_item_index(ans, bought["item"])
             if is_added == -1:
                 ans.append(bought)
             else:
@@ -240,7 +241,7 @@ def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consum
         ans = req_buy
         for used in req_use:
             # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            i = get_item_index(ans, used["item"])
+            i = commons.get_item_index(ans, used["item"])
             if i != -1:
                 if ans[i]["unit"] != "$/" + used["unit"]:
                     masse_volumique = get_item_density(used["item"])
@@ -282,7 +283,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         ans = []
         for bought in req_buy:
             # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            is_added = get_item_index(ans, bought["item"])
+            is_added = commons.get_item_index(ans, bought["item"])
             if is_added == -1:
                 ans.append(bought)
             else:
@@ -298,7 +299,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         del req_buy[:]
         for used in req_use:
             # Si l'item n'a jamais été achetée, on doit l'ajouter, puis inverser la qte
-            is_added = get_item_index(ans, used["item"])
+            is_added = commons.get_item_index(ans, used["item"])
             if is_added == -1:
                 ans.append(used)
                 ans[-1]["total qte"] = -1 * used["total qte"]
@@ -331,17 +332,6 @@ def get_item_density(item):
 # Construction de la liste des matières premières
 def list_raw_materials():
     return transactions.distinct("item")
-
-
-# Extrait l'index de l'item dans 'ans'
-def get_item_index(ans, item):
-    if len(ans) != 0:
-        i = 0
-        for element in ans:
-            if element["item"] == item:
-                return i
-            i += 1
-    return -1
 
 
 # Retourne une liste contenant seulement les éléments Purchase
