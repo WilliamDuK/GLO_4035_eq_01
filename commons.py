@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
 # Extrait l'index de l'item dans 'ans'
 def get_item_index(ans, item):
     if len(ans) != 0:
