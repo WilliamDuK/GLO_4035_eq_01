@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from flask import Flask, jsonify, request, render_template
 from flask_pymongo import PyMongo
 from bson.json_util import dumps
