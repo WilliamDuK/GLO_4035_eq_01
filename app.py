@@ -7,9 +7,16 @@ import dates
 import commons
 
 
+DB_NAME = "glo4035_inventory"
+DB_HOST = "ds045679.mlab.com"
+DB_PORT = 45679
+DB_USER = "admin"
+DB_PASS = "tXKqB2bZ9v"
+
+
 application = Flask("my_glo4035_application")
 application.config["JSON_SORT_KEYS"] = False
-application.config["MONGO_URI"] = "mongodb://127.0.0.1:27017/inventory"
+application.config["MONGO_URI"] = "mongodb://" + DB_USER + ":" + DB_PASS + "@" + DB_HOST + ":" + str(DB_PORT) + "/" + DB_NAME
 mongo = PyMongo(application)
 transactions = mongo.db.transactions
 

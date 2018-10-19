@@ -2,7 +2,6 @@ from flask import jsonify
 from jsonschema import validate, ValidationError
 
 
-# md5(abc12345) = d6b0ab7f1c8ab8f514db9a6d85de160a
 MD5_HASHED_PASSWORD = "d6b0ab7f1c8ab8f514db9a6d85de160a"
 TRANSACTION_SCHEMA = {
     "properties": {
