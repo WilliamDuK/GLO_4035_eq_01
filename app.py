@@ -39,12 +39,23 @@ def index():
 def add_many_transactions():
     if request.headers['Content-Type'] == "application/json":
         data = request.get_json()
-        data = dates.update_dates_format_db(data)  # convert date to str(datetime)
-        if validations.validate_json(data):
-            if isinstance(data, list):
-                transactions.insert_many(data)
-            elif isinstance(data, dict):
-                transactions.insert_one(data)
+        if isinstance(data, dict):
+            data = [data]
+        if validations.validate_json(data):  # Vérification rapide du format des données
+            data = dates.update_dates_format_db(data)  # Convert date to str(datetime)
+            for item in data:  # Vérification du type des données
+                if validations.validate_purchase(item):
+                    transactions.purchases.insert_one(item)
+                elif validations.validate_transformation(item):
+                    transactions.transformations.insert_one(item)
+                elif validations.validate_density(item):
+                    transactions.densities.insert_one(item)
+                else:
+                    return jsonify(
+                        result="Failure",
+                        status="400",
+                        message="The JSON is incorrectly formatted"
+                    ), 400
             return jsonify(
                 result="Success",
                 status="200",
@@ -72,7 +83,10 @@ def drop_all_collections():
         passwd = hashlib.md5(request.get_json()["password"].encode("utf-8")).hexdigest()
         res = validations.verify_passwd(passwd)
         if res[0].json["result"] == "Success":
-            transactions.drop()  # Doit dropper toutes les collections
+            # Doit dropper toutes les collections
+            transactions.purchases.drop()
+            transactions.transformations.drop()
+            transactions.densities.drop()
         return res
     return jsonify(
         result="Failure",
@@ -88,7 +102,7 @@ def get_all_transactions():
     # test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
     # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
     # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
-    return dumps(transactions.find())
+    return dumps(transactions.densities.find())
 
 
 # Route d'API pouvant aller extraire la transaction avec l'ID donné de votre base de données.
@@ -203,7 +217,7 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
         ans = []
         for bought in req:
             # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            is_added = commons.get_item_index(ans, bought["item"])
+            is_added = commons.get_index_of(ans, bought["item"])
             if is_added == -1:
                 ans.append(bought)
             else:
@@ -250,7 +264,7 @@ def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consum
         ans = req_buy
         for used in req_use:
             # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            i = commons.get_item_index(ans, used["item"])
+            i = commons.get_index_of(ans, used["item"])
             if i != -1:
                 if ans[i]["unit"] != "$/" + used["unit"]:
                     masse_volumique = get_item_density(used["item"])
@@ -292,7 +306,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         ans = []
         for bought in req_buy:
             # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            is_added = commons.get_item_index(ans, bought["item"])
+            is_added = commons.get_index_of(ans, bought["item"])
             if is_added == -1:
                 ans.append(bought)
             else:
@@ -308,7 +322,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         del req_buy[:]
         for used in req_use:
             # Si l'item n'a jamais été achetée, on doit l'ajouter, puis inverser la qte
-            is_added = commons.get_item_index(ans, used["item"])
+            is_added = commons.get_index_of(ans, used["item"])
             if is_added == -1:
                 ans.append(used)
                 ans[-1]["total qte"] = -1 * used["total qte"]

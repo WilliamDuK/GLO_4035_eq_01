@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 
-# Extrait l'index de l'item dans 'array'
-def get_item_index(array, item):
+# Extrait l'index de l'item dans l'array
+def get_index_of(array, item):
     if len(array) != 0:
         i = 0
         for element in array:

@@ -136,15 +136,9 @@ def verify_passwd(password):
 
 # Vérification de chacun des documents JSON un à la fois
 def validate_json(data):
-    if isinstance(data, list):
-        for i in range(len(data)):
-            if not(validate_transaction(data[i])):
-                return False
-    elif isinstance(data, dict):
-        if not(validate_transaction(data)):
+    for item in data:
+        if not(validate_transaction(item)):
             return False
-    else:
-        return False
     return True
 
 

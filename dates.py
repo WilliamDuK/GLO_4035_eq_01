@@ -31,10 +31,6 @@ def update_dates_format_db(data):
             if not validations.validate_density(item):
                 item["date"] = convert_date(item["date"])
         return data
-    elif isinstance(data, dict):
-        if not validations.validate_density(data):
-            data["date"] = convert_date(data["date"])
-        return data
     else:
         return jsonify(
             result="Failure",
