@@ -74,7 +74,7 @@ PURCHASE_SCHEMA = {
     "required": ["date", "item", "qte", "unit", "total", "stotal", "tax"],
     "additionalProperties": False
 }
-TRANSFORM_SCHEMA = {
+TRANSFORMATION_SCHEMA = {
     "properties": {
         "date": {
             "type": "string"
@@ -169,9 +169,9 @@ def validate_purchase(item):
 
 
 # Vérifie si l'objet reçu en paramètre est Transform
-def validate_transform(item):
+def validate_transformation(item):
     try:
-        validate(item, TRANSFORM_SCHEMA)
+        validate(item, TRANSFORMATION_SCHEMA)
     except ValidationError:
         return False
     else:

@@ -107,7 +107,7 @@ def get_one_transaction(trans_id):
 
 # Route d'API pouvant modifier la transaction avec l'ID donnée de votre base de données.
 # Les opérateurs pour modifier seront donnés avant la requête HTML.
-@application.route("/entries/<trans_id>", methods=["PUT"])
+@application.route("/transactions/<trans_id>", methods=["PUT"])
 def put_one_transaction(trans_id, trans_mod):
     ans = transactions.find_one({"_id": trans_id})
     if ans:
@@ -126,7 +126,7 @@ def put_one_transaction(trans_id, trans_mod):
 
 
 # Route d'API pouvant supprimer la transaction avec l'ID donnée de votre base de données.
-@application.route("/entries/<trans_id>", methods=["DELETE"])
+@application.route("/transactions/<trans_id>", methods=["DELETE"])
 def delete_one_transaction(trans_id):
     ans = transactions.find_one({"_id": trans_id})
     if ans:
@@ -358,7 +358,7 @@ def create_list_transformations():
     data = transactions.find({}, {"_id": 0})
     list_transformations = []
     for item in data:
-        if validations.validate_transform(item):
+        if validations.validate_transformation(item):
             list_transformations.append(item)
     return list_transformations
 
