@@ -36,7 +36,7 @@ def index():
 # - Code HTTP 200: JSON bien formaté.
 # - Code HTTP 400: JSON mal formaté.
 @application.route("/transactions", methods=["POST"])
-def add_many_transactions():
+def add_transactions():
     if request.headers['Content-Type'] == "application/json":
         data = request.get_json()
         if isinstance(data, dict):
@@ -61,11 +61,12 @@ def add_many_transactions():
                 status="200",
                 message="The JSON is correctly formatted"
             ), 200
-        return jsonify(
-            result="Failure",
-            status="400",
-            message="The JSON is incorrectly formatted"
-        ), 400
+        else:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="The JSON is incorrectly formatted"
+            ), 400
     return jsonify(
         result="Failure",
         status="405",
