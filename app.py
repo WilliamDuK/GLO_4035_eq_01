@@ -67,7 +67,7 @@ def add_transactions():
                     message="The JSON is incorrectly formatted"
                 ), 400
         return jsonify(
-            result="Succes",
+            result="Success",
             status="200",
             message="The JSON is correctly formatted"
         )
