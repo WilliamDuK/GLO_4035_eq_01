@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, jsonify, request, render_template
 from flask_pymongo import PyMongo
-from bson.json_util import dumps
+from bson.json_util import dumps, loads
 import hashlib
 import validations
 import dates
@@ -21,6 +21,9 @@ application.config["JSON_SORT_KEYS"] = False
 application.config["MONGO_URI"] = "mongodb://" + DB_USER + ":" + DB_PASS + "@" + DB_HOST + ":" + str(DB_PORT) + "/" + DB_NAME
 mongo = PyMongo(application)
 transactions = mongo.db.transactions
+# purchases = mongo.db.transactions.purchases
+# transformations = mongo.db.transactions.transformations
+# densities = mongo.db.transactions.densities
 
 
 # ------------- API -------------
@@ -103,7 +106,11 @@ def get_all_transactions():
     # test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
     # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
     # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
-    return dumps(transactions.densities.find())
+    return dumps({
+        "purchases": transactions.purchases.find(),
+        "transformations": transactions.transformations.find(),
+        "densities": transactions.densities.find()
+    })
 
 
 # Route d'API pouvant aller extraire la transaction avec l'ID donné de votre base de données.
