@@ -136,23 +136,33 @@ def get_one_transaction(trans_type, trans_id):
 
 # Route d'API pouvant modifier la transaction avec l'ID donnée de votre base de données.
 # Les opérateurs pour modifier seront donnés avant la requête HTML.
-@application.route("/transactions/<trans_id>", methods=["PUT"])
-def put_one_transaction(trans_id, trans_mod):
-    ans = transactions.find_one({"_id": trans_id})
-    if ans:
-        transactions.update_one(ans, trans_mod)
-        return jsonify(
-            result="Success",
-            status="200",
-            message="The transaction with that ID was successfuly modified"
-        ), 200
-    else:
-        return jsonify(
-            result="Failure",
-            status="400",
-            message="A transaction with that ID doesn't exist"
-        ), 400
-
+@application.route("/transactions/<trans_type>/<trans_id>", methods=["PUT"])
+def put_one_transaction(trans_type, trans_id):
+    if request.headers['Content-Type'] == "application/json":
+        data = request.get_json()
+        if trans_type == "purchases":
+            ans = transactions.purchases.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+        elif trans_type == "transformations":
+            ans = transactions.transformations.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+        elif trans_type == "densities":
+            ans = transactions.densities.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+        if ans:
+            return jsonify(
+                result="Success",
+                status="200",
+                message="The transaction with that ID was successfully modified"
+            ), 200
+        else:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="A transaction with that ID doesn't exist"
+            ), 400
+    return jsonify(
+        result="Failure",
+        status="405",
+        message="The wrong type of content was sent"
+    ), 405
 
 # Route d'API pouvant supprimer la transaction avec l'ID donnée de votre base de données.
 @application.route("/transactions/<trans_id>", methods=["DELETE"])
