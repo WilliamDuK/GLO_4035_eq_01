@@ -107,9 +107,9 @@ def get_all_transactions():
     # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
     # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps({
-        "purchases": transactions.purchases.find(),
-        "transformations": transactions.transformations.find(),
-        "densities": transactions.densities.find()
+        "purchases": loads(create_list_purchases()),
+        "transformations": loads(create_list_transformations()),
+        "densities": loads(create_list_densities())
     })
 
 
@@ -355,44 +355,24 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
 
 # Retourne la masse volumique d'un élément
 def get_item_density(item):
-    item = transactions.find_one({"information": "density", "item": item})
+    item = transactions.densities.find_one({"information": "density", "item": item})
     density = item["g"] / item["ml"]
     return density
 
 
-# Construction de la liste des matières premières
-def list_raw_materials():
-    return transactions.distinct("item")
-
-
 # Retourne une liste contenant seulement les éléments Purchase
 def create_list_purchases():
-    data = transactions.find({}, {"_id": 0})
-    list_purchases = []
-    for item in data:
-        if validations.validate_purchase(item):
-            list_purchases.append(item)
-    return list_purchases
+    return dumps(transactions.purchases.find())
 
 
-# Retourne une liste contenant seulement les éléments Transform
+# Retourne une liste contenant seulement les éléments Transformation
 def create_list_transformations():
-    data = transactions.find({}, {"_id": 0})
-    list_transformations = []
-    for item in data:
-        if validations.validate_transformation(item):
-            list_transformations.append(item)
-    return list_transformations
+    return dumps(transactions.transformations.find())
 
 
 # Retourne une liste contenant seulement les éléments Density
 def create_list_densities():
-    data = transactions.find({}, {"_id": 0})
-    list_densities = []
-    for item in data:
-        if validations.validate_density(item):
-            list_densities.append(item)
-    return list_densities
+    return dumps(transactions.densities.find())
 
 
 # ---------- Exécution ----------
