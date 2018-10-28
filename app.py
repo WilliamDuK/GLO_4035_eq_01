@@ -118,20 +118,27 @@ def get_all_transactions():
 # Route d'API pouvant aller extraire la transaction avec l'ID donné de votre base de données.
 @application.route("/transactions/<trans_type>/<trans_id>", methods=["GET"])
 def get_one_transaction(trans_type, trans_id):
-    if trans_type == "purchases":
-        ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
-    elif trans_type == "transformations":
-        ans = transactions.transformations.find_one({"_id": ObjectId(trans_id)})
-    elif trans_type == "densities":
-        ans = transactions.densities.find_one({"_id": ObjectId(trans_id)})
-    if ans:
-        return dumps(ans)
+    if validations.validate_objectid(trans_id):
+        if trans_type == "purchases":
+            ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
+        elif trans_type == "transformations":
+            ans = transactions.transformations.find_one({"_id": ObjectId(trans_id)})
+        elif trans_type == "densities":
+            ans = transactions.densities.find_one({"_id": ObjectId(trans_id)})
+        if ans:
+            return dumps(ans)
+        else:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="A transaction with that ID doesn't exist"
+            ), 400
     else:
         return jsonify(
             result="Failure",
-            status="400",
-            message="A transaction with that ID doesn't exist"
-        ), 400
+            status="405",
+            message="The ObjectId sent is not valid"
+        ), 405
 
 
 # Route d'API pouvant modifier la transaction avec l'ID donnée de votre base de données.
@@ -139,18 +146,54 @@ def get_one_transaction(trans_type, trans_id):
 @application.route("/transactions/<trans_type>/<trans_id>", methods=["PUT"])
 def put_one_transaction(trans_type, trans_id):
     if request.headers['Content-Type'] == "application/json":
-        data = request.get_json()
+        if validations.validate_objectid(trans_id):
+            data = request.get_json()
+            if trans_type == "purchases":
+                ans = transactions.purchases.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+            elif trans_type == "transformations":
+                ans = transactions.transformations.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+            elif trans_type == "densities":
+                ans = transactions.densities.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+            if ans:
+                return jsonify(
+                    result="Success",
+                    status="200",
+                    message="The transaction with that ID was successfully modified"
+                ), 200
+            else:
+                return jsonify(
+                    result="Failure",
+                    status="400",
+                    message="A transaction with that ID doesn't exist"
+                ), 400
+        else:
+            return jsonify(
+                result="Failure",
+                status="405",
+                message="The ObjectId sent is not valid"
+            ), 405
+    return jsonify(
+        result="Failure",
+        status="405",
+        message="The wrong type of content was sent"
+    ), 405
+
+
+# Route d'API pouvant supprimer la transaction avec l'ID donnée de votre base de données.
+@application.route("/transactions/<trans_type>/<trans_id>", methods=["DELETE"])
+def delete_one_transaction(trans_type, trans_id):
+    if validations.validate_objectid(trans_id):
         if trans_type == "purchases":
-            ans = transactions.purchases.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+            ans = transactions.purchases.find_one_and_delete({"_id": ObjectId(trans_id)})
         elif trans_type == "transformations":
-            ans = transactions.transformations.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+            ans = transactions.transformations.find_one_and_delete({"_id": ObjectId(trans_id)})
         elif trans_type == "densities":
-            ans = transactions.densities.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+            ans = transactions.densities.find_one_and_delete({"_id": ObjectId(trans_id)})
         if ans:
             return jsonify(
                 result="Success",
                 status="200",
-                message="The transaction with that ID was successfully modified"
+                message="The transaction with that ID was successfully deleted"
             ), 200
         else:
             return jsonify(
@@ -158,29 +201,12 @@ def put_one_transaction(trans_type, trans_id):
                 status="400",
                 message="A transaction with that ID doesn't exist"
             ), 400
-    return jsonify(
-        result="Failure",
-        status="405",
-        message="The wrong type of content was sent"
-    ), 405
-
-# Route d'API pouvant supprimer la transaction avec l'ID donnée de votre base de données.
-@application.route("/transactions/<trans_id>", methods=["DELETE"])
-def delete_one_transaction(trans_id):
-    ans = transactions.find_one({"_id": trans_id})
-    if ans:
-        transactions.delete_one(ans)
-        return jsonify(
-            result="Success",
-            status="200",
-            message="The transaction with that ID was successfully deleted"
-        ), 200
     else:
         return jsonify(
             result="Failure",
-            status="400",
-            message="A transaction with that ID doesn't exist"
-        ), 400
+            status="405",
+            message="The ObjectId sent is not valid"
+        ), 405
 
 
 # ---------- Fonctions ----------

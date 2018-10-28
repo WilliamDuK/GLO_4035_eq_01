@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from flask import jsonify
 from jsonschema import validate, ValidationError
+from bson.objectid import ObjectId, InvalidId
 
 
 MD5_HASHED_PASSWORD = "d6b0ab7f1c8ab8f514db9a6d85de160a"
@@ -172,3 +173,12 @@ def validate_density(item):
         return False
     else:
         return True
+
+
+# Vérifie si l'ObjectId est valide
+def validate_objectid(oid):
+    try:
+        ObjectId(oid)
+        return True
+    except (InvalidId, TypeError):
+        return False
