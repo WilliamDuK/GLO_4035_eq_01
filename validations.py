@@ -134,14 +134,6 @@ def verify_passwd(password):
         ), 401
 
 
-# Vérification de chacun des documents JSON un à la fois
-def validate_json(data):
-    for item in data:
-        if not(validate_transaction(item)):
-            return False
-    return True
-
-
 # Vérifie si l'objet reçu en paramètre est Transaction
 def validate_transaction(item):
     try:

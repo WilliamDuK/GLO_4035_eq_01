@@ -22,18 +22,3 @@ def revert_date(new_date):
     old_date = new_date.split("-")
     old_date = old_date[2].lstrip("0") + " " + DATE_MONTHS[int(old_date[1])-1] + " " + old_date[0]
     return old_date
-
-
-# Met à jour le format des dates dans la base de données
-def update_dates_format_db(data):
-    if isinstance(data, list):
-        for item in data:
-            if not validations.validate_density(item):
-                item["date"] = convert_date(item["date"])
-        return data
-    else:
-        return jsonify(
-            result="Failure",
-            status="405",
-            message="The wrong type of content was sent"
-        ), 405

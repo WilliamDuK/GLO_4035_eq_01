@@ -44,9 +44,10 @@ def add_transactions():
         data = request.get_json()
         if isinstance(data, dict):
             data = [data]
-        if validations.validate_json(data):  # Vérification rapide du format des données
-            data = dates.update_dates_format_db(data)  # Convert date to str(datetime)
-            for item in data:  # Vérification du type des données
+        for item in data:  # Vérification du type des données
+            if validations.validate_transaction(item):
+                if not validations.validate_density(item):
+                    item["date"] = dates.convert_date(item["date"])
                 if validations.validate_purchase(item):
                     transactions.purchases.insert_one(item)
                 elif validations.validate_transformation(item):
@@ -59,17 +60,17 @@ def add_transactions():
                         status="400",
                         message="The JSON is incorrectly formatted"
                     ), 400
-            return jsonify(
-                result="Success",
-                status="200",
-                message="The JSON is correctly formatted"
-            ), 200
-        else:
-            return jsonify(
-                result="Failure",
-                status="400",
-                message="The JSON is incorrectly formatted"
-            ), 400
+            else:
+                return jsonify(
+                    result="Failure",
+                    status="400",
+                    message="The JSON is incorrectly formatted"
+                ), 400
+        return jsonify(
+            result="Succes",
+            status="200",
+            message="The JSON is correctly formatted"
+        )
     return jsonify(
         result="Failure",
         status="405",
