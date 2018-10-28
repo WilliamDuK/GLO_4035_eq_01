@@ -3,6 +3,7 @@
 from flask import Flask, jsonify, request, render_template
 from flask_pymongo import PyMongo
 from bson.json_util import dumps, loads
+from bson.objectid import ObjectId
 import hashlib
 import validations
 import dates
@@ -115,9 +116,14 @@ def get_all_transactions():
 
 
 # Route d'API pouvant aller extraire la transaction avec l'ID donné de votre base de données.
-@application.route("/transactions/<trans_id>", methods=["GET"])
-def get_one_transaction(trans_id):
-    ans = transactions.find_one({"_id": trans_id})
+@application.route("/transactions/<trans_type>/<trans_id>", methods=["GET"])
+def get_one_transaction(trans_type, trans_id):
+    if trans_type == "purchases":
+        ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
+    elif trans_type == "transformations":
+        ans = transactions.transformations.find_one({"_id": ObjectId(trans_id)})
+    elif trans_type == "densities":
+        ans = transactions.densities.find_one({"_id": ObjectId(trans_id)})
     if ans:
         return dumps(ans)
     else:
