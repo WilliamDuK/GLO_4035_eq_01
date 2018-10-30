@@ -104,8 +104,8 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    # test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
+    test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
+    test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
     # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
     # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps({
@@ -219,13 +219,12 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""},
-                    "job_id": None}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": "i"}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
         {"$project": {"_id": 0, "item": "$_id", "total cost": 1}}
     ]
-    req = list(transactions.aggregate(pipeline))
+    req = list(transactions.purchases.aggregate(pipeline))
     if not req:
         return jsonify(
             result="Failure",
@@ -234,8 +233,8 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
         ), 400
     else:
         ans = []
-        for bought in req:
-            ans.append(bought)
+        for item in req:
+            ans.append(item)
             ans[-1]["unit"] = "$"
         return ans
 
