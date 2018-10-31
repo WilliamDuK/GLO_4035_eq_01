@@ -104,8 +104,8 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
+    # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
+    # test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
     # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
     # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps({
@@ -222,7 +222,7 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": "i"}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
-        {"$project": {"_id": 0, "item": "$_id", "total cost": 1}}
+        {"$project": {"_id": 0, "item": "$_id", "total cost": 1, "unit": {"$literal": "$"}}}
     ]
     req = list(transactions.purchases.aggregate(pipeline))
     if not req:
@@ -232,11 +232,7 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
             message="There are no transactions with the given date and category"
         ), 400
     else:
-        ans = []
-        for item in req:
-            ans.append(item)
-            ans[-1]["unit"] = "$"
-        return ans
+        return req
 
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
@@ -247,15 +243,14 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""},
-                    "job_id": None}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": "i"}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"},
                     "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit",
                       "total cost": 1, "total qte": 1}}
     ]
-    req = list(transactions.aggregate(pipeline))
+    req = list(transactions.purchases.aggregate(pipeline))
     if not req:
         return jsonify(
             result="Failure",
@@ -297,13 +292,12 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
 def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consumable", tax=True):
     req_buy = avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax)
     pipeline = [
-        {"$match": {"item": {"$regex": category, "$options": ""}, "tax": None,
-                    "unit": {"$ne": "unit"}}},
+        {"$match": {"item": {"$regex": category, "$options": ""}, "unit": {"$ne": "unit"}}},
         {"$project": {"_id": 0, "item": 1, "unit": 1}},
         {"$group": {"_id": {"item": "$item"}, "unit": {"$addToSet": "$unit"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": {"$arrayElemAt": ["$unit", 0]}}}
     ]
-    req_use = list(transactions.aggregate(pipeline))
+    req_use = list(transactions.transformations.aggregate(pipeline))
     if not req_buy or not req_use:
         return jsonify(
             result="Failure",
@@ -331,19 +325,19 @@ def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consum
 def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     # Calculer la quantité de matériaux achetées
     pipeline_buy = [
-        {"$match": {"date": {"$lte": dates.convert_date(date)}, "job_id": None}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
     ]
-    req_buy = list(transactions.aggregate(pipeline_buy))
+    req_buy = list(transactions.purchases.aggregate(pipeline_buy))
 
     # Calculer la quantité de matériaux utilisées
     pipeline_use = [
-        {"$match": {"date": {"$lte": dates.convert_date(date)}, "tax": None, "type": "usage"}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "type": "usage"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
     ]
-    req_use = list(transactions.aggregate(pipeline_use))
+    req_use = list(transactions.transformations.aggregate(pipeline_use))
 
     if not req_buy or not req_use:
         return jsonify(
