@@ -104,9 +104,6 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    a = list_all_items()
-    b = list_all_many_units_items()
-    c = list_all_single_unit_items()
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
     test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
     test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
@@ -358,13 +355,20 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
                 ans.append(bought)
             else:
                 # On ne change pas l'unité dans cas-ci
-                masse_volumique = get_item_density(bought["item"])
                 if ans[is_added]["unit"] == bought["unit"]:
                     ans[is_added]["total qte"] += bought["total qte"]
-                elif bought["unit"] == "ml":
-                    ans[is_added]["total qte"] += bought["total qte"] * masse_volumique
-                elif bought["unit"] == "g":
-                    ans[is_added]["total qte"] += bought["total qte"] / masse_volumique
+                else:
+                    masse_volumique = get_item_density(bought["item"])
+                    if bought["unit"] == "ml":
+                        ans[is_added]["total qte"] += bought["total qte"] * masse_volumique
+                    elif bought["unit"] == "g":
+                        ans[is_added]["total qte"] += bought["total qte"] / masse_volumique
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="400",
+                            message="The unit of this item is invalid (neither g nor ml)"
+                        ), 400
             ans[is_added]["total qte"] = round(ans[is_added]["total qte"])
         # Vider la list req_buy
         del req_buy[:]
