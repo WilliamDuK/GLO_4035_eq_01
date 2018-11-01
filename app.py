@@ -104,6 +104,9 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
+    a = list_all_items()
+    b = list_all_many_units_items()
+    c = list_all_single_unit_items()
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
     test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
     test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
@@ -292,7 +295,7 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
 def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consumable", tax=True):
     req_buy = avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax)
     pipeline = [
-        {"$match": {"item": {"$regex": category, "$options": ""}, "unit": {"$ne": "unit"}}},
+        {"$match": {"item": {"$regex": category, "$options": "i"}, "unit": {"$ne": "unit"}}},
         {"$project": {"_id": 0, "item": 1, "unit": 1}},
         {"$group": {"_id": {"item": "$item"}, "unit": {"$addToSet": "$unit"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": {"$arrayElemAt": ["$unit", 0]}}}
@@ -410,6 +413,20 @@ def create_list_transformations():
 def create_list_densities():
     return dumps(transactions.densities.find())
 
+
+def list_all_items():
+    req = transactions.purchases.distinct("item")
+    req.extend(transactions.transformations.distinct("item"))
+    return list(set(req))
+
+
+def list_all_many_units_items():
+    req = transactions.densities.distinct("item")
+    return list(set(req))
+
+
+def list_all_single_unit_items():
+    return list(set(list_all_items()) - set(list_all_many_units_items()))
 
 # ---------- Exécution ----------
 
