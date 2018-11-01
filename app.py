@@ -392,13 +392,6 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         return ans
 
 
-# Retourne la masse volumique d'un élément
-def get_item_density(item):
-    item = transactions.densities.find_one({"information": "density", "item": item})
-    density = item["g"] / item["ml"]
-    return density
-
-
 # Retourne une liste contenant seulement les éléments Purchase
 def create_list_purchases():
     return dumps(transactions.purchases.find())
@@ -412,6 +405,24 @@ def create_list_transformations():
 # Retourne une liste contenant seulement les éléments Density
 def create_list_densities():
     return dumps(transactions.densities.find())
+
+
+# Retourne la masse volumique d'un élément
+def get_item_density(item):
+    # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
+    if item not in list_all_many_units_items():
+        if "Base Oil" in item:
+            ans = transactions.densities.find_one({"information": "density", "item": "Consumable - Base Oil"})
+        else:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="There are no density for this item"
+            ), 400
+    else:
+        ans = transactions.densities.find_one({"information": "density", "item": item})
+    density = ans["g"] / ans["ml"]
+    return density
 
 
 # Retourne une liste contenant tous les items
