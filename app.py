@@ -407,24 +407,6 @@ def create_list_densities():
     return dumps(transactions.densities.find())
 
 
-# Retourne la masse volumique d'un élément
-def get_item_density(item):
-    # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
-    if item not in list_all_many_units_items():
-        if "Base Oil" in item:
-            ans = transactions.densities.find_one({"information": "density", "item": "Consumable - Base Oil"})
-        else:
-            return jsonify(
-                result="Failure",
-                status="400",
-                message="There are no density for this item"
-            ), 400
-    else:
-        ans = transactions.densities.find_one({"information": "density", "item": item})
-    density = ans["g"] / ans["ml"]
-    return density
-
-
 # Retourne une liste contenant tous les items
 def list_all_items():
     req = transactions.purchases.distinct("item")
@@ -441,6 +423,24 @@ def list_all_many_units_items():
 # Retourne une liste contenant tous les items avec une seule unité possible
 def list_all_single_unit_items():
     return list(set(list_all_items()) - set(list_all_many_units_items()))
+
+
+# Retourne la masse volumique d'un élément
+def get_item_density(item):
+    # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
+    if item not in list_all_many_units_items():
+        if "Base Oil" in item:
+            ans = transactions.densities.find_one({"information": "density", "item": "Consumable - Base Oil"})
+        else:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="There are no density for this item"
+            ), 400
+    else:
+        ans = transactions.densities.find_one({"information": "density", "item": item})
+    density = ans["g"] / ans["ml"]
+    return density
 
 
 # ---------- Exécution ----------
