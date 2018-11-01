@@ -414,19 +414,23 @@ def create_list_densities():
     return dumps(transactions.densities.find())
 
 
+# Retourne une liste contenant tous les items
 def list_all_items():
     req = transactions.purchases.distinct("item")
     req.extend(transactions.transformations.distinct("item"))
     return list(set(req))
 
 
+# Retourne une liste contenant tous les items avec plusieurs unités possibles
 def list_all_many_units_items():
     req = transactions.densities.distinct("item")
     return list(set(req))
 
 
+# Retourne une liste contenant tous les items avec une seule unité possible
 def list_all_single_unit_items():
     return list(set(list_all_items()) - set(list_all_many_units_items()))
+
 
 # ---------- Exécution ----------
 
