@@ -105,8 +105,8 @@ def drop_all_collections():
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    # test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
-    # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
+    test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
+    test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
     # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
@@ -349,11 +349,12 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         # Calculer la quantité de matériaux restants après utilisation
         ans = []
         for bought in req_buy:
-            # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
+            # Verifier ici si l'élément est déjà dans 'ans', sinon l'ajouter dans 'ans'
             is_added = commons.get_index_of(ans, bought["item"])
             if is_added == -1:
                 ans.append(bought)
             else:
+                # On ne change pas l'unité dans cas-ci
                 masse_volumique = get_item_density(bought["item"])
                 if ans[is_added]["unit"] == bought["unit"]:
                     ans[is_added]["total qte"] += bought["total qte"]
@@ -373,16 +374,15 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
             else:
                 if ans[is_added]["item"] == used["item"]:
                     # Soustraire la quantité utilisé de l'élément dans 'ans'
-                    if ans[is_added]["unit"] == used["unit"]:
-                        ans[is_added]["total qte"] -= used["total qte"]
-                    else:
+                    if ans[is_added]["unit"] != used["unit"]:
+                        # On change l'unité dans ce cas-ci
                         masse_volumique = get_item_density(used["item"])
                         ans[is_added]["unit"] = used["unit"]
                         if ans[is_added]["unit"] == "ml":
                             ans[is_added]["total qte"] /= masse_volumique
                         elif ans[is_added]["unit"] == "g":
                             ans[is_added]["total qte"] *= masse_volumique
-                        ans[is_added]["total qte"] -= used["total qte"]
+                    ans[is_added]["total qte"] -= used["total qte"]
                     ans[is_added]["total qte"] = round(ans[is_added]["total qte"])
         # Vider la list req_use
         del req_use[:]
