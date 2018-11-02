@@ -15,34 +15,34 @@ TRANSACTION_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "unit": {
             "type": "string"
         },
         "total": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "stotal": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "tax": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "job_id": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "type": {
             "type": "string"
         },
-        "information": {
+        "Information": {
             "type": "string"
         },
         "g": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "ml": {
-            "type": "number"
+            "type": "string"  # "number"
         }
     },
     "required": ["item"],
@@ -57,19 +57,19 @@ PURCHASE_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "unit": {
             "type": "string"
         },
         "total": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "stotal": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "tax": {
-            "type": "number"
+            "type": "string"  # "number"
         }
     },
     "required": ["date", "item", "qte", "unit", "total", "stotal", "tax"],
@@ -84,13 +84,13 @@ TRANSFORMATION_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "unit": {
             "type": "string"
         },
         "job_id": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "type": {
             "type": "string"
@@ -101,20 +101,20 @@ TRANSFORMATION_SCHEMA = {
 }
 DENSITY_SCHEMA = {
     "properties": {
-        "information": {
+        "Information": {
             "type": "string"
         },
         "item": {
             "type": "string"
         },
         "g": {
-            "type": "number"
+            "type": "string"  # "number"
         },
         "ml": {
-            "type": "number"
+            "type": "string"  # "number"
         }
     },
-    "required": ["information", "item", "g", "ml"],
+    "required": ["Information", "item", "g", "ml"],
     "additionalProperties": False
 }
 
