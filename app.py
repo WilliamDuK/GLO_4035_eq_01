@@ -436,7 +436,7 @@ def get_item_density(item):
     # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
     if item not in list_all_many_units_items():
         if "Base Oil" in item:
-            ans = transactions.densities.find_one({"information": "density", "item": "Consumable - Base Oil"})
+            ans = transactions.densities.find_one({"item": "Consumable - Base Oil"})
         else:
             return jsonify(
                 result="Failure",
