@@ -104,6 +104,8 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
+    # list1 = get_purchases_units()
+    # list2 = get_transformations_units()
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
     test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
     test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
@@ -219,7 +221,7 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": "i"}}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
         {"$project": {"_id": 0, "item": "$_id", "total cost": 1, "unit": {"$literal": "$"}}}
@@ -243,7 +245,7 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
     else:
         tax_field = "$stotal"
     pipeline = [
-        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": "i"}}},
+        {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"},
                     "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
@@ -292,7 +294,7 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
 def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consumable", tax=True):
     req_buy = avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax)
     pipeline = [
-        {"$match": {"item": {"$regex": category, "$options": "i"}, "unit": {"$ne": "unit"}}},
+        {"$match": {"item": {"$regex": category, "$options": ""}, "unit": {"$ne": "unit"}}},
         {"$project": {"_id": 0, "item": 1, "unit": 1}},
         {"$group": {"_id": {"item": "$item"}, "unit": {"$addToSet": "$unit"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": {"$arrayElemAt": ["$unit", 0]}}}
@@ -445,6 +447,31 @@ def get_item_density(item):
         ans = transactions.densities.find_one({"information": "density", "item": item})
     density = ans["g"] / ans["ml"]
     return density
+
+
+# Donne la liste de l'unité d'acquisition des items
+def get_purchases_units():
+    pipeline = [
+        {"$group": {"_id": "$item", "units": {"$addToSet": "$unit"}}},
+        {"$project": {"_id": 0, "item": "$_id",
+                      "unit": {"$cond": [{"$gt": [{"$size": "$units"}, 1]}, "both", {"$arrayElemAt": ["$units", 0]}]}}},
+        {"$sort": {"item": 1}}
+    ]
+    req = transactions.purchases.aggregate(pipeline)
+    return list(req)
+
+
+# Donne la liste de l'unité d'utilisation des items
+def get_transformations_units():
+    pipeline = [
+        {"$match": {"type": "usage"}},
+        {"$group": {"_id": "$item", "units": {"$addToSet": "$unit"}}},
+        {"$project": {"_id": 0, "item": "$_id",
+                      "unit": {"$cond": [{"$gt": [{"$size": "$units"}, 1]}, "both", {"$arrayElemAt": ["$units", 0]}]}}},
+        {"$sort": {"item": 1}}
+    ]
+    req = transactions.transformations.aggregate(pipeline)
+    return list(req)
 
 
 # ---------- Exécution ----------
