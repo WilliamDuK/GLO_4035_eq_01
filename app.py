@@ -107,8 +107,8 @@ def get_all_transactions():
     # list1 = get_purchases_units()
     # list2 = get_transformations_units()
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    test2 = avg_cost_weighted_by_unit_get_given_date_and_category("5 January 2018", "Base Oil")
-    test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
+    # test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
+    # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
     # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
@@ -239,7 +239,7 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
 # à une date précise d'une catégorie de matériel.
-def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consumable", tax=True):
+def avg_cost_weighted_by_unit_buy_given_date_and_category(date, category="Consumable", tax=True):
     if tax:
         tax_field = "$total"
     else:
@@ -292,34 +292,28 @@ def avg_cost_weighted_by_unit_get_given_date_and_category(date, category="Consum
 # Le coût moyen d'acquisition, pondéré par l'unité d'utilisation,
 # à une date précise d'une catégorie de matériel.
 def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consumable", tax=True):
-    req_buy = avg_cost_weighted_by_unit_get_given_date_and_category(date, category, tax)
-    pipeline = [
-        {"$match": {"item": {"$regex": category, "$options": ""}, "unit": {"$ne": "unit"}}},
-        {"$project": {"_id": 0, "item": 1, "unit": 1}},
-        {"$group": {"_id": {"item": "$item"}, "unit": {"$addToSet": "$unit"}}},
-        {"$project": {"_id": 0, "item": "$_id.item", "unit": {"$arrayElemAt": ["$unit", 0]}}}
-    ]
-    req_use = list(transactions.transformations.aggregate(pipeline))
-    if not req_buy or not req_use:
+    req = avg_cost_weighted_by_unit_buy_given_date_and_category(date, category, tax)
+    if not req:
         return jsonify(
             result="Failure",
             status="400",
             message="There are no transactions with the given date and category"
         ), 400
     else:
-        ans = req_buy
-        for used in req_use:
+        ans = get_transformations_units()
+        for item in ans:
             # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            i = commons.get_index_of(ans, used["item"])
+            i = commons.get_index_of(req, item["item"])
             if i != -1:
-                if ans[i]["unit"] != "$/" + used["unit"]:
-                    masse_volumique = get_item_density(used["item"])
-                    ans[i]["unit"] = "$/" + used["unit"]
-                    if used["unit"] == "$/ml":
-                        ans[i]["avg cost"] /= masse_volumique
-                    elif used["unit"] == "$/g":
-                        ans[i]["avg cost"] *= masse_volumique
-        return ans
+                if req[i]["unit"] != "$/" + item["unit"]:
+                    masse_volumique = get_item_density(item["item"])
+                    req[i]["unit"] = "$/" + item["unit"]
+                    if item["unit"] == "ml":
+                        req[i]["avg cost"] *= masse_volumique
+                    elif item["unit"] == "g":
+                        req[i]["avg cost"] /= masse_volumique
+                    req[i]["avg cost"] = round(req[i]["avg cost"], 2)
+        return req
 
 
 # L'image à une date précise de la quantité restante, en unité d'utilisation,
@@ -392,7 +386,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
                         elif ans[is_added]["unit"] == "g":
                             ans[is_added]["total qte"] *= masse_volumique
                     ans[is_added]["total qte"] -= used["total qte"]
-                    ans[is_added]["total qte"] = round(ans[is_added]["total qte"])
+            ans[is_added]["total qte"] = round(ans[is_added]["total qte"])
         # Vider la list req_use
         del req_use[:]
         return ans
