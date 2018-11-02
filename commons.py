@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 
-# Extrait l'index de l'item dans 'ans'
-def get_item_index(ans, item):
-    if len(ans) != 0:
+# Extrait l'index de l'item dans l'array
+def get_index_of(array, item):
+    if len(array) != 0:
         i = 0
-        for element in ans:
+        for element in array:
             if element["item"] == item:
                 return i
             i += 1
