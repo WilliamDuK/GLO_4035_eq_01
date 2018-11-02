@@ -15,22 +15,22 @@ TRANSACTION_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "unit": {
             "type": "string"
         },
         "total": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "stotal": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "tax": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "job_id": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "type": {
             "type": "string"
@@ -39,10 +39,10 @@ TRANSACTION_SCHEMA = {
             "type": "string"
         },
         "g": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "ml": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         }
     },
     "required": ["item"],
@@ -57,19 +57,19 @@ PURCHASE_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "unit": {
             "type": "string"
         },
         "total": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "stotal": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "tax": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         }
     },
     "required": ["date", "item", "qte", "unit", "total", "stotal", "tax"],
@@ -84,13 +84,13 @@ TRANSFORMATION_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "unit": {
             "type": "string"
         },
         "job_id": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "type": {
             "type": "string"
@@ -108,10 +108,10 @@ DENSITY_SCHEMA = {
             "type": "string"
         },
         "g": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         },
         "ml": {
-            "type": "string"  # "number"
+            "type": ["string", "number"]
         }
     },
     "required": ["Information", "item", "g", "ml"],

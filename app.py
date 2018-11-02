@@ -53,10 +53,13 @@ def add_transactions():
                 if not validations.validate_density(item):
                     item["date"] = dates.convert_date(item["date"])
                 if validations.validate_purchase(item):
+                    item = convert_purchases_numbers(item)
                     transactions.purchases.insert_one(item)
                 elif validations.validate_transformation(item):
+                    item = convert_transformations_numbers(item)
                     transactions.transformations.insert_one(item)
                 elif validations.validate_density(item):
+                    item = convert_densities_numbers(item)
                     transactions.densities.insert_one(item)
                 else:
                     return jsonify(
@@ -109,10 +112,10 @@ def drop_all_collections():
 def get_all_transactions():
     # list1 = get_purchases_units()
     # list2 = get_transformations_units()
-    # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    # test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
-    # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
-    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
+    test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
+    test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
+    test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
+    test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
         "transformations": loads(create_list_transformations()),
@@ -227,7 +230,7 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
-        {"$project": {"_id": 0, "item": "$_id", "total cost": 1, "unit": {"$literal": "$"}}}
+        {"$project": {"_id": 0, "item": "$_id", "total cost": "$total cost", "unit": {"$literal": "$"}}}
     ]
     req = list(transactions.purchases.aggregate(pipeline))
     if not req:
@@ -283,7 +286,7 @@ def avg_cost_weighted_by_unit_buy_given_date_and_category(date, category="Consum
                     ans[is_added]["total qte"] += bought["total qte"] / masse_volumique
         # Calcul des coûts moyens
         for item in ans:
-            item["avg cost"] = round(item["total cost"] / item["total qte"], 2)
+            item["avg cost"] = round(item["total cost"] / item["total qte"], 6)
             del item["total cost"]
             del item["total qte"]
             item["unit"] = "$/" + item["unit"]
@@ -315,7 +318,7 @@ def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consum
                         req[i]["avg cost"] *= masse_volumique
                     elif item["unit"] == "g":
                         req[i]["avg cost"] /= masse_volumique
-                    req[i]["avg cost"] = round(req[i]["avg cost"], 2)
+                    req[i]["avg cost"] = round(req[i]["avg cost"], 6)
         return req
 
 
@@ -441,7 +444,7 @@ def get_item_density(item):
                 message="There are no density for this item"
             ), 400
     else:
-        ans = transactions.densities.find_one({"information": "density", "item": item})
+        ans = transactions.densities.find_one({"item": item})
     density = ans["g"] / ans["ml"]
     return density
 
@@ -469,6 +472,29 @@ def get_transformations_units():
     ]
     req = transactions.transformations.aggregate(pipeline)
     return list(req)
+
+
+# Convertie toutes les string(number) en number de transactions.purchases
+def convert_purchases_numbers(item):
+    item["qte"] = int(item["qte"])
+    item["total"] = float(item["total"])
+    item["stotal"] = float(item["stotal"])
+    item["tax"] = float(item["tax"])
+    return item
+
+
+# Convertie toutes les string(number) en number de transactions.transformations
+def convert_transformations_numbers(item):
+    item["qte"] = int(item["qte"])
+    item["job_id"] = int(item["job_id"])
+    return item
+
+
+# Convertie toutes les string(number) en number de transactions.densities
+def convert_densities_numbers(item):
+    item["g"] = float(item["g"])
+    item["ml"] = float(item["ml"])
+    return item
 
 
 # ---------- Exécution ----------
