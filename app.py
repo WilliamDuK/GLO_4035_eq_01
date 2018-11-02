@@ -46,6 +46,8 @@ def add_transactions():
         if isinstance(data, dict):
             data = [data]
         for item in data:  # Vérification du type des données
+            # C'est les validations qui ne fonctionnent pas.
+            # Sans celle-ci, les insertions fonctionnent
             if validations.validate_transaction(item):
                 if not validations.validate_density(item):
                     item["date"] = dates.convert_date(item["date"])
