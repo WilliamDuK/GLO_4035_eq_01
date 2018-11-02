@@ -38,6 +38,9 @@ TRANSACTION_SCHEMA = {
         "Information": {
             "type": "string"
         },
+        "information": {
+            "type": "string"
+        },
         "g": {
             "type": ["string", "number"]
         },
@@ -104,6 +107,9 @@ DENSITY_SCHEMA = {
         "Information": {
             "type": "string"
         },
+        "information": {
+            "type": "string"
+        },
         "item": {
             "type": "string"
         },
@@ -114,7 +120,7 @@ DENSITY_SCHEMA = {
             "type": ["string", "number"]
         }
     },
-    "required": ["Information", "item", "g", "ml"],
+    "required": ["item", "g", "ml"],
     "additionalProperties": False
 }
 
