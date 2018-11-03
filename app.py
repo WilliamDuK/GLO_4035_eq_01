@@ -115,7 +115,7 @@ def get_all_transactions():
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
     test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
     test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
-    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 February 2018")
+    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 April 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
         "transformations": loads(create_list_transformations()),
@@ -299,7 +299,9 @@ def avg_cost_weighted_by_unit_buy_given_date_and_category(date, category="Consum
             item["avg cost"] = round(item["total cost"] / item["total qte"], 6)
             del item["total cost"]
             del item["total qte"]
-            item["unit"] = "$/" + item["unit"]
+            unit = "$/" + item["unit"]
+            del item["unit"]
+            item["unit"] = unit
         # Vider la list req
         del req[:]
         return ans
@@ -316,20 +318,9 @@ def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consum
             message="There are no transactions with the given date and category"
         ), 400
     else:
-        ans = get_transformations_units()
-        for item in ans:
-            # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            i = commons.get_index_of(req, item["item"])
-            if i != -1:
-                if req[i]["unit"] != "$/" + item["unit"]:
-                    masse_volumique = get_item_density(item["item"])
-                    req[i]["unit"] = "$/" + item["unit"]
-                    if item["unit"] == "ml":
-                        req[i]["avg cost"] *= masse_volumique
-                    elif item["unit"] == "g":
-                        req[i]["avg cost"] /= masse_volumique
-                    req[i]["avg cost"] = round(req[i]["avg cost"], 6)
-        return req
+        # Convertir en unité d'utilisation
+        ans = convert_unit_to_use_avg(req)
+        return ans
 
 
 # L'image à une date précise de la quantité restante, en unité d'utilisation,
@@ -406,7 +397,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
         # Vider la list req_use
         del req_use[:]
         # Convertir en unité d'utilisation
-        ans = convert_unit_to_use(ans)
+        ans = convert_unit_to_use_img(ans)
         return ans
 
 
@@ -509,8 +500,13 @@ def get_item_density(item):
     return density
 
 
-# Convertit les unités des items en leur unité d'utilisation
-def convert_unit_to_use(array):
+# Convertit les unités des items 'avg' en leur unité d'utilisation
+def convert_unit_to_use_avg(array):
+    return 0
+
+
+# Convertit les unités des items 'image' en leur unité d'utilisation
+def convert_unit_to_use_img(array):
     units = get_transformations_units()
     for item in array:
         if item["item"] in list_all_many_units_items() or "Base Oil" in item["item"]:
