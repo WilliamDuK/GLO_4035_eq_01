@@ -502,7 +502,8 @@ def get_item_density(item):
 
 # Convertit les unités des items 'avg' en leur unité d'utilisation
 def convert_unit_to_use_avg(array):
-    return 0
+    units = get_transformations_units()
+    return array
 
 
 # Convertit les unités des items 'image' en leur unité d'utilisation
