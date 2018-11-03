@@ -115,7 +115,7 @@ def get_all_transactions():
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
     test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
     test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
-    test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
+    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 February 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
         "transformations": loads(create_list_transformations()),
@@ -243,7 +243,7 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
     else:
         ans = {}
         # Détection de la catégorie
-        ans["category"] = detect_category(req)
+        ans["category"] = commons.detect_category(req)
         # Sommation des coûts
         ans["total cost"] = 0
         for item in req:
@@ -339,7 +339,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     pipeline_buy = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
-        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
+        {"$project": {"_id": 0, "item": "$_id.item", "total qte": "$total qte", "unit": "$_id.unit"}}
     ]
     req_buy = list(transactions.purchases.aggregate(pipeline_buy))
 
@@ -347,7 +347,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     pipeline_use = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "type": "usage"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
-        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
+        {"$project": {"_id": 0, "item": "$_id.item", "total qte": "$total qte", "unit": "$_id.unit"}}
     ]
     req_use = list(transactions.transformations.aggregate(pipeline_use))
 
@@ -405,6 +405,8 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
             ans[is_added]["total qte"] = round(ans[is_added]["total qte"])
         # Vider la list req_use
         del req_use[:]
+        # Convertir en unité d'utilisation
+        ans = convert_unit_to_use(ans)
         return ans
 
 
@@ -421,42 +423,6 @@ def create_list_transformations():
 # Retourne une liste contenant seulement les éléments Density
 def create_list_densities():
     return dumps(transactions.densities.find())
-
-
-# Retourne une liste contenant tous les items
-def list_all_items():
-    req = transactions.purchases.distinct("item")
-    req.extend(transactions.transformations.distinct("item"))
-    return list(set(req))
-
-
-# Retourne une liste contenant tous les items avec plusieurs unités possibles
-def list_all_many_units_items():
-    req = transactions.densities.distinct("item")
-    return list(set(req))
-
-
-# Retourne une liste contenant tous les items avec une seule unité possible
-def list_all_single_unit_items():
-    return list(set(list_all_items()) - set(list_all_many_units_items()))
-
-
-# Retourne la masse volumique d'un élément
-def get_item_density(item):
-    # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
-    if item not in list_all_many_units_items():
-        if "Base Oil" in item:
-            ans = transactions.densities.find_one({"item": "Consumable - Base Oil"})
-        else:
-            return jsonify(
-                result="Failure",
-                status="400",
-                message="There are no density for this item"
-            ), 400
-    else:
-        ans = transactions.densities.find_one({"item": item})
-    density = ans["g"] / ans["ml"]
-    return density
 
 
 # Donne la liste de l'unité d'acquisition des items
@@ -507,26 +473,63 @@ def convert_densities_numbers(item):
     return item
 
 
-# Extraction de la sous-string qui détermine la catégorie utilisée
-def detect_category(array):
-    ans = ""
-    if len(array) == 1:
-        ans = array[0]["item"]
-    elif len(array) > 1:
-        item1, item2 = array[0]["item"], array[-1]["item"]
-        len1, len2 = len(item1), len(item2)
-        for i in range(len1):
-            match = ""
-            for j in range(len2):
-                if i + j < len1 and item1[i + j] == item2[j]:
-                    match += item2[j]
-                else:
-                    if len(match) > len(ans):
-                        ans = match
-                    match = ""
-    if ans.endswith(" - "):
-        ans = ans[:-3]
-    return ans
+# Retourne une liste contenant tous les items
+def list_all_items():
+    req = transactions.purchases.distinct("item")
+    req.extend(transactions.transformations.distinct("item"))
+    return list(set(req))
+
+
+# Retourne une liste contenant tous les items avec plusieurs unités possibles
+def list_all_many_units_items():
+    req = transactions.densities.distinct("item")
+    return list(set(req))
+
+
+# Retourne une liste contenant tous les items avec une seule unité possible
+def list_all_single_unit_items():
+    return list(set(list_all_items()) - set(list_all_many_units_items()))
+
+
+# Retourne la masse volumique d'un élément
+def get_item_density(item):
+    # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
+    if item not in list_all_many_units_items():
+        if "Base Oil" in item:
+            ans = transactions.densities.find_one({"item": "Consumable - Base Oil"})
+        else:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="There are no density for this item"
+            ), 400
+    else:
+        ans = transactions.densities.find_one({"item": item})
+    density = ans["g"] / ans["ml"]
+    return density
+
+
+# Convertit les unités des items en leur unité d'utilisation
+def convert_unit_to_use(array):
+    units = get_transformations_units()
+    for item in array:
+        if item["item"] in list_all_many_units_items() or "Base Oil" in item["item"]:
+            index_unit = commons.get_index_of(units, item["item"])
+            if index_unit != -1:
+                if item["unit"] != units[index_unit]["unit"] and not units[index_unit]["unit"] == "both":
+                    # On change l'unité dans ce cas-ci
+                    masse_volumique = get_item_density(item["item"])
+                    item["unit"] = units[index_unit]["unit"]
+                    if units[index_unit]["unit"] == "ml":
+                        item["total qte"] /= masse_volumique
+                    elif units[index_unit]["unit"] == "g":
+                        item["total qte"] *= masse_volumique
+            elif index_unit == -1 and "Base Oil" in item["item"] and item["unit"] != "ml":
+                masse_volumique = get_item_density(item["item"])
+                item["unit"] = "ml"
+                item["total qte"] /= masse_volumique
+            item["total qte"] = round(item["total qte"])
+    return array
 
 
 # ---------- Exécution ----------
