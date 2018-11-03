@@ -113,9 +113,9 @@ def get_all_transactions():
     # list1 = get_purchases_units()
     # list2 = get_transformations_units()
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    # test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
-    # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
-    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
+    test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
+    test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
+    test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
         "transformations": loads(create_list_transformations()),
@@ -230,7 +230,8 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
-        {"$project": {"_id": 0, "item": "$_id", "total cost": "$total cost", "unit": {"$literal": "$"}}}
+        {"$project": {"_id": 0, "item": "$_id", "total cost": "$total cost", "unit": {"$literal": "$"}}},
+        {"$sort": {"item": 1}}
     ]
     req = list(transactions.purchases.aggregate(pipeline))
     if not req:
@@ -240,7 +241,16 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
             message="There are no transactions with the given date and category"
         ), 400
     else:
-        return req
+        ans = {}
+        # Détection de la catégorie
+        ans["category"] = detect_category(req)
+        # Sommation des coûts
+        ans["total cost"] = 0
+        for item in req:
+            ans["total cost"] += item["total cost"]
+        # Ajout de l'unité
+        ans["unit"] = "$"
+        return ans
 
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
@@ -495,6 +505,28 @@ def convert_densities_numbers(item):
     item["g"] = float(item["g"])
     item["ml"] = float(item["ml"])
     return item
+
+
+# Extraction de la sous-string qui détermine la catégorie utilisée
+def detect_category(array):
+    ans = ""
+    if len(array) == 1:
+        ans = array[0]["item"]
+    elif len(array) > 1:
+        item1, item2 = array[0]["item"], array[-1]["item"]
+        len1, len2 = len(item1), len(item2)
+        for i in range(len1):
+            match = ""
+            for j in range(len2):
+                if i + j < len1 and item1[i + j] == item2[j]:
+                    match += item2[j]
+                else:
+                    if len(match) > len(ans):
+                        ans = match
+                    match = ""
+    if ans.endswith(" - "):
+        ans = ans[:-3]
+    return ans
 
 
 # ---------- Exécution ----------
