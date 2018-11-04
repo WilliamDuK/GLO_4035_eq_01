@@ -115,7 +115,7 @@ def get_all_transactions():
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
     # test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
     # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
-    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 January 2018")
+    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 April 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
         "transformations": loads(create_list_transformations()),
@@ -127,12 +127,19 @@ def get_all_transactions():
 @application.route("/transactions/<trans_type>/<trans_id>", methods=["GET"])
 def get_one_transaction(trans_type, trans_id):
     if validations.validate_objectid(trans_id):
+        ans = {}
         if trans_type == "purchases":
             ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
         elif trans_type == "transformations":
             ans = transactions.transformations.find_one({"_id": ObjectId(trans_id)})
         elif trans_type == "densities":
             ans = transactions.densities.find_one({"_id": ObjectId(trans_id)})
+        else:
+            return jsonify(
+                result="Failure",
+                status="405",
+                message="There is no sub-collection named " + trans_type
+            ), 405
         if ans:
             return dumps(ans)
         else:
@@ -156,24 +163,85 @@ def put_one_transaction(trans_type, trans_id):
     if request.headers['Content-Type'] == "application/json":
         if validations.validate_objectid(trans_id):
             data = request.get_json()
+            ans = {}
             if trans_type == "purchases":
-                ans = transactions.purchases.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+                ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
+                if ans:
+                    del ans["_id"]
+                    ans.update(data)
+                    if validations.validate_purchase(ans):
+                        transactions.purchases.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                        return jsonify(
+                            result="Success",
+                            status="200",
+                            message="The transaction with that ID was successfully modified"
+                        ), 200
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="405",
+                            message="The modifications applied on the transaction is invalid"
+                        ), 405
+                else:
+                    return jsonify(
+                        result="Failure",
+                        status="400",
+                        message="A transaction with that ID doesn't exist"
+                    ), 400
             elif trans_type == "transformations":
-                ans = transactions.transformations.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+                ans = transactions.transformations.find_one({"_id": ObjectId(trans_id)})
+                if ans:
+                    del ans["_id"]
+                    ans.update(data)
+                    if validations.validate_transformation(ans):
+                        transactions.transformations.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                        return jsonify(
+                            result="Success",
+                            status="200",
+                            message="The transaction with that ID was successfully modified"
+                        ), 200
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="405",
+                            message="The modifications applied on the transaction is invalid"
+                        ), 405
+                else:
+                    return jsonify(
+                        result="Failure",
+                        status="400",
+                        message="A transaction with that ID doesn't exist"
+                    ), 400
             elif trans_type == "densities":
-                ans = transactions.densities.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
-            if ans:
-                return jsonify(
-                    result="Success",
-                    status="200",
-                    message="The transaction with that ID was successfully modified"
-                ), 200
+                ans = transactions.densities.find_one({"_id": ObjectId(trans_id)})
+                if ans:
+                    del ans["_id"]
+                    ans.update(data)
+                    if validations.validate_density(ans):
+                        transactions.densities.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                        return jsonify(
+                            result="Success",
+                            status="200",
+                            message="The transaction with that ID was successfully modified"
+                        ), 200
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="405",
+                            message="The modifications applied on the transaction is invalid"
+                        ), 405
+                else:
+                    return jsonify(
+                        result="Failure",
+                        status="400",
+                        message="A transaction with that ID doesn't exist"
+                    ), 400
             else:
                 return jsonify(
                     result="Failure",
-                    status="400",
-                    message="A transaction with that ID doesn't exist"
-                ), 400
+                    status="405",
+                    message="There is no sub-collection named " + trans_type
+                ), 405
         else:
             return jsonify(
                 result="Failure",
@@ -191,12 +259,19 @@ def put_one_transaction(trans_type, trans_id):
 @application.route("/transactions/<trans_type>/<trans_id>", methods=["DELETE"])
 def delete_one_transaction(trans_type, trans_id):
     if validations.validate_objectid(trans_id):
+        ans = {}
         if trans_type == "purchases":
             ans = transactions.purchases.find_one_and_delete({"_id": ObjectId(trans_id)})
         elif trans_type == "transformations":
             ans = transactions.transformations.find_one_and_delete({"_id": ObjectId(trans_id)})
         elif trans_type == "densities":
             ans = transactions.densities.find_one_and_delete({"_id": ObjectId(trans_id)})
+        else:
+            return jsonify(
+                result="Failure",
+                status="405",
+                message="There is no sub-collection named " + trans_type
+            ), 405
         if ans:
             return jsonify(
                 result="Success",
@@ -230,7 +305,8 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
-        {"$project": {"_id": 0, "item": "$_id", "total cost": "$total cost", "unit": {"$literal": "$"}}}
+        {"$project": {"_id": 0, "item": "$_id", "total cost": "$total cost", "unit": {"$literal": "$"}}},
+        {"$sort": {"item": 1}}
     ]
     req = list(transactions.purchases.aggregate(pipeline))
     if not req:
@@ -240,7 +316,16 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
             message="There are no transactions with the given date and category"
         ), 400
     else:
-        return req
+        ans = {}
+        # Détection de la catégorie
+        ans["category"] = commons.detect_category(req)
+        # Sommation des coûts
+        ans["total cost"] = 0
+        for item in req:
+            ans["total cost"] += item["total cost"]
+        # Ajout de l'unité
+        ans["unit"] = "$"
+        return ans
 
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
@@ -289,7 +374,9 @@ def avg_cost_weighted_by_unit_buy_given_date_and_category(date, category="Consum
             item["avg cost"] = round(item["total cost"] / item["total qte"], 6)
             del item["total cost"]
             del item["total qte"]
-            item["unit"] = "$/" + item["unit"]
+            unit = "$/" + item["unit"]
+            del item["unit"]
+            item["unit"] = unit
         # Vider la list req
         del req[:]
         return ans
@@ -306,20 +393,9 @@ def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consum
             message="There are no transactions with the given date and category"
         ), 400
     else:
-        ans = get_transformations_units()
-        for item in ans:
-            # Verifier ici si l'élément est déjà dans 'ans', sinon ignore
-            i = commons.get_index_of(req, item["item"])
-            if i != -1:
-                if req[i]["unit"] != "$/" + item["unit"]:
-                    masse_volumique = get_item_density(item["item"])
-                    req[i]["unit"] = "$/" + item["unit"]
-                    if item["unit"] == "ml":
-                        req[i]["avg cost"] *= masse_volumique
-                    elif item["unit"] == "g":
-                        req[i]["avg cost"] /= masse_volumique
-                    req[i]["avg cost"] = round(req[i]["avg cost"], 6)
-        return req
+        # Convertir en unité d'utilisation
+        ans = convert_unit_to_use_avg(req)
+        return ans
 
 
 # L'image à une date précise de la quantité restante, en unité d'utilisation,
@@ -329,7 +405,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     pipeline_buy = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
-        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
+        {"$project": {"_id": 0, "item": "$_id.item", "total qte": "$total qte", "unit": "$_id.unit"}}
     ]
     req_buy = list(transactions.purchases.aggregate(pipeline_buy))
 
@@ -337,7 +413,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     pipeline_use = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "type": "usage"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
-        {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit", "total qte": "$total qte"}}
+        {"$project": {"_id": 0, "item": "$_id.item", "total qte": "$total qte", "unit": "$_id.unit"}}
     ]
     req_use = list(transactions.transformations.aggregate(pipeline_use))
 
@@ -395,6 +471,8 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
             ans[is_added]["total qte"] = round(ans[is_added]["total qte"])
         # Vider la list req_use
         del req_use[:]
+        # Convertir en unité d'utilisation
+        ans = convert_unit_to_use_img(ans)
         return ans
 
 
@@ -411,42 +489,6 @@ def create_list_transformations():
 # Retourne une liste contenant seulement les éléments Density
 def create_list_densities():
     return dumps(transactions.densities.find())
-
-
-# Retourne une liste contenant tous les items
-def list_all_items():
-    req = transactions.purchases.distinct("item")
-    req.extend(transactions.transformations.distinct("item"))
-    return list(set(req))
-
-
-# Retourne une liste contenant tous les items avec plusieurs unités possibles
-def list_all_many_units_items():
-    req = transactions.densities.distinct("item")
-    return list(set(req))
-
-
-# Retourne une liste contenant tous les items avec une seule unité possible
-def list_all_single_unit_items():
-    return list(set(list_all_items()) - set(list_all_many_units_items()))
-
-
-# Retourne la masse volumique d'un élément
-def get_item_density(item):
-    # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
-    if item not in list_all_many_units_items():
-        if "Base Oil" in item:
-            ans = transactions.densities.find_one({"item": "Consumable - Base Oil"})
-        else:
-            return jsonify(
-                result="Failure",
-                status="400",
-                message="There are no density for this item"
-            ), 400
-    else:
-        ans = transactions.densities.find_one({"item": item})
-    density = ans["g"] / ans["ml"]
-    return density
 
 
 # Donne la liste de l'unité d'acquisition des items
@@ -495,6 +537,88 @@ def convert_densities_numbers(item):
     item["g"] = float(item["g"])
     item["ml"] = float(item["ml"])
     return item
+
+
+# Retourne une liste contenant tous les items
+def list_all_items():
+    req = transactions.purchases.distinct("item")
+    req.extend(transactions.transformations.distinct("item"))
+    return list(set(req))
+
+
+# Retourne une liste contenant tous les items avec plusieurs unités possibles
+def list_all_many_units_items():
+    req = transactions.densities.distinct("item")
+    return list(set(req))
+
+
+# Retourne une liste contenant tous les items avec une seule unité possible
+def list_all_single_unit_items():
+    return list(set(list_all_items()) - set(list_all_many_units_items()))
+
+
+# Retourne la masse volumique d'un élément
+def get_item_density(item):
+    # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
+    if item not in list_all_many_units_items():
+        if "Base Oil" in item:
+            ans = transactions.densities.find_one({"item": "Consumable - Base Oil"})
+        else:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="There are no density for this item"
+            ), 400
+    else:
+        ans = transactions.densities.find_one({"item": item})
+    density = ans["g"] / ans["ml"]
+    return density
+
+
+# Convertit les unités des items 'avg' en leur unité d'utilisation
+def convert_unit_to_use_avg(array):
+    units = get_transformations_units()
+    for item in array:
+        if item["item"] in list_all_many_units_items() or "Base Oil" in item["item"]:
+            index_unit = commons.get_index_of(units, item["item"])
+            if index_unit != -1:
+                if item["unit"] != "$/" + units[index_unit]["unit"] and not units[index_unit]["unit"] == "both":
+                    # On change l'unité dans ce cas-ci
+                    masse_volumique = get_item_density(item["item"])
+                    item["unit"] = "$/" + units[index_unit]["unit"]
+                    if units[index_unit]["unit"] == "ml":
+                        item["avg cost"] *= masse_volumique
+                    elif units[index_unit]["unit"] == "g":
+                        item["avg cost"] /= masse_volumique
+            elif index_unit == -1 and "Base Oil" in item["item"] and item["unit"] != "$/ml":
+                masse_volumique = get_item_density(item["item"])
+                item["unit"] = "$/ml"
+                item["avg cost"] *= masse_volumique
+            item["avg cost"] = round(item["avg cost"], 6)
+    return array
+
+
+# Convertit les unités des items 'image' en leur unité d'utilisation
+def convert_unit_to_use_img(array):
+    units = get_transformations_units()
+    for item in array:
+        if item["item"] in list_all_many_units_items() or "Base Oil" in item["item"]:
+            index_unit = commons.get_index_of(units, item["item"])
+            if index_unit != -1:
+                if item["unit"] != units[index_unit]["unit"] and not units[index_unit]["unit"] == "both":
+                    # On change l'unité dans ce cas-ci
+                    masse_volumique = get_item_density(item["item"])
+                    item["unit"] = units[index_unit]["unit"]
+                    if units[index_unit]["unit"] == "ml":
+                        item["total qte"] /= masse_volumique
+                    elif units[index_unit]["unit"] == "g":
+                        item["total qte"] *= masse_volumique
+            elif index_unit == -1 and "Base Oil" in item["item"] and item["unit"] != "ml":
+                masse_volumique = get_item_density(item["item"])
+                item["unit"] = "ml"
+                item["total qte"] /= masse_volumique
+            item["total qte"] = round(item["total qte"])
+    return array
 
 
 # ---------- Exécution ----------
