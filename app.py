@@ -157,11 +157,41 @@ def put_one_transaction(trans_type, trans_id):
         if validations.validate_objectid(trans_id):
             data = request.get_json()
             if trans_type == "purchases":
-                ans = transactions.purchases.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+                ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
+                del ans["_id"]
+                ans.update(data)
+                if validations.validate_purchase(ans):
+                    transactions.purchases.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                else:
+                    return jsonify(
+                        result="Failure",
+                        status="405",
+                        message="The modifications applied on the transaction is invalid"
+                    ), 405
             elif trans_type == "transformations":
-                ans = transactions.transformations.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+                ans = transactions.transformations.find_one({"_id": ObjectId(trans_id)})
+                del ans["_id"]
+                ans.update(data)
+                if validations.validate_transformation(ans):
+                    transactions.transformations.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                else:
+                    return jsonify(
+                        result="Failure",
+                        status="405",
+                        message="The modifications applied on the transaction is invalid"
+                    ), 405
             elif trans_type == "densities":
-                ans = transactions.densities.find_one_and_update({"_id": ObjectId(trans_id)}, {"$set": data})
+                ans = transactions.densities.find_one({"_id": ObjectId(trans_id)})
+                del ans["_id"]
+                ans.update(data)
+                if validations.validate_density(ans):
+                    transactions.densities.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                else:
+                    return jsonify(
+                        result="Failure",
+                        status="405",
+                        message="The modifications applied on the transaction is invalid"
+                    ), 405
             if ans:
                 return jsonify(
                     result="Success",
