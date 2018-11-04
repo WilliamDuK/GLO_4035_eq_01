@@ -113,8 +113,8 @@ def get_all_transactions():
     # list1 = get_purchases_units()
     # list2 = get_transformations_units()
     # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
-    test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
+    # test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
+    # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
     # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 April 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
@@ -503,6 +503,23 @@ def get_item_density(item):
 # Convertit les unités des items 'avg' en leur unité d'utilisation
 def convert_unit_to_use_avg(array):
     units = get_transformations_units()
+    for item in array:
+        if item["item"] in list_all_many_units_items() or "Base Oil" in item["item"]:
+            index_unit = commons.get_index_of(units, item["item"])
+            if index_unit != -1:
+                if item["unit"] != "$/" + units[index_unit]["unit"] and not units[index_unit]["unit"] == "both":
+                    # On change l'unité dans ce cas-ci
+                    masse_volumique = get_item_density(item["item"])
+                    item["unit"] = "$/" + units[index_unit]["unit"]
+                    if units[index_unit]["unit"] == "ml":
+                        item["avg cost"] *= masse_volumique
+                    elif units[index_unit]["unit"] == "g":
+                        item["avg cost"] /= masse_volumique
+            elif index_unit == -1 and "Base Oil" in item["item"] and item["unit"] != "$/ml":
+                masse_volumique = get_item_density(item["item"])
+                item["unit"] = "$/ml"
+                item["avg cost"] *= masse_volumique
+            item["avg cost"] = round(item["avg cost"], 6)
     return array
 
 
