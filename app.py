@@ -417,7 +417,7 @@ def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
     ]
     req_use = list(transactions.transformations.aggregate(pipeline_use))
 
-    if not req_buy or not req_use:
+    if not req_buy and not req_use:
         return jsonify(
             result="Failure",
             status="400",
