@@ -18,7 +18,7 @@
         }
 
         #data-api {
-            length: 100vh;
+
         }
     </style>
 </head>
@@ -127,10 +127,10 @@
                 method = document.getElementById("select-api").value;
                 type = document.getElementById("select-type").value;
                 if (method === "POST") {
-                    data = document.getElementById("data-api").value;
+                    data = document.getElementById("data-api").value.replace(/'/g, "\"");
                     $.ajax({
                         "type": method,
-                        "url": "/transactions/" + type + "/",
+                        "url": "/transactions",
                         "dataType": "json",
                         "contentType": "application/json",
                         "data": data
@@ -141,7 +141,7 @@
                 }
                 else if (method === "PUT") {
                     oid = document.getElementById("oid-api").value;
-                    data = document.getElementById("data-api").value;
+                    data = document.getElementById("data-api").value.replace(/'/g, "\"");
                     $.ajax({
                         "type": method,
                         "url": "/transactions/" + type + "/" + oid,
