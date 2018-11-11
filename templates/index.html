@@ -12,13 +12,13 @@
 
         .transactions-textarea {
             margin:auto;
-            width: 98vh;
+            width: 98%;
             height: 30vh;
             resize: none;
         }
 
         #data-api {
-
+            width: 50%;
         }
     </style>
 </head>
@@ -29,6 +29,7 @@
     </div>
     <hr/>
     <div class="container-api">
+        <span>Manipulation de données: </span>
         <select id="select-api" onchange="changeAPI(this.value)">
             <option value="POST" selected="selected">Insertion</option>
             <option value="PUT">Modification</option>
