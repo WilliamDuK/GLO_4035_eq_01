@@ -6,6 +6,10 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
     <style type="text/css">
+        .container {
+            display: inline-block;
+        }
+
         .transactions-textarea {
             margin:auto;
             width: 98vh;
@@ -13,8 +17,8 @@
             resize: none;
         }
 
-        .container {
-            display: inline-block;
+        #data-api {
+            length: 100vh;
         }
     </style>
 </head>
@@ -25,12 +29,12 @@
     </div>
     <hr/>
     <div class="container-api">
-        <select id="select-api" onchange="changeApi(this.value)">
+        <select id="select-api" onchange="changeAPI(this.value)">
             <option value="POST" selected="selected">Insertion</option>
             <option value="PUT">Modification</option>
             <option value="DELETE">Suppression</option>
         </select>
-        <select id="select-type">
+        <select id="select-type" onchange="changeType(this.value)">
             <option value="purchases" selected="selected">Achats</option>
             <option value="transformations">Utilisations</option>
             <option value="densities">Densitées</option>
@@ -70,6 +74,8 @@
 
             <li>Vérifier avec l'application Excel pour les normes : catégorie vs item pour "avg cost"</li>
 
+            <li>Vérifier que 'tax' soit toujours égale 'total' - 'stotal'</li>
+
             <li>Apprendre comment créer les éléments HTML dynamiques avec Flask et Python</li>
             <li>Afficher les résultats de ces exploitation</li>
 
@@ -80,7 +86,35 @@
     </div>
 
     <script type="text/javascript">
+        let format_purchase =
+            "{" +
+                "'date': '', " +
+                "'item': '', " +
+                "'qte': , " +
+                "'unit': '', " +
+                "'total': , " +
+                "'stotal': , " +
+                "'tax': " +
+            "}";
+        let format_transformation =
+            "{" +
+                "'date': '', " +
+                "'item': '', " +
+                "'qte': , " +
+                "'unit': '', " +
+                "'job_id': '', " +
+                "'type': " +
+            "}";
+        let format_density =
+            "{" +
+                "'Information': 'density', " +
+                "'item': '', " +
+                "'g': , " +
+                "'ml': " +
+            "}";
+
         $(document).ready(function() {
+            document.getElementById("data-api").value = format_purchase;
             $.getJSON("/transactions", function(data) {
                 update_transactions_lists(data);
             });
@@ -145,12 +179,14 @@
             document.getElementById(element).innerHTML = JSON.stringify(data, undefined, 4);
         }
 
-        function changeApi(method) {
+        function changeAPI(method) {
             document.getElementById("oid-api").value = "";
             document.getElementById("data-api").value = "";
             if (method === "POST") {
                 document.getElementById("oid-api").hidden = true;
                 document.getElementById("data-api").hidden = false;
+                type = document.getElementById("select-type").value;
+                changeType(type);
             }
             else if (method === "PUT") {
                 document.getElementById("oid-api").hidden = false;
@@ -159,6 +195,27 @@
             else if (method === "DELETE") {
                 document.getElementById("oid-api").hidden = false;
                 document.getElementById("data-api").hidden = true;
+            }
+            else {
+                // Do nothing
+            }
+        }
+
+        function changeType(type) {
+            method = document.getElementById("select-api").value;
+            if (method === "POST") {
+                if (type === "purchases") {
+                    document.getElementById("data-api").value = format_purchase;
+                }
+                else if (type === "transformations") {
+                    document.getElementById("data-api").value = format_transformation;
+                }
+                else if (type === "densities") {
+                    document.getElementById("data-api").value = format_density;
+                }
+                else {
+                    // Do nothing
+                }
             }
             else {
                 // Do nothing
