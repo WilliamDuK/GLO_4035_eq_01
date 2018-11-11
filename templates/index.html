@@ -24,6 +24,22 @@
         <button type="button" id="refresh">Refresh</button>
     </div>
     <hr/>
+    <div class="container-api">
+        <select id="select-api" onchange="changeApi(this.value)">
+            <option value="POST" selected="selected">Insertion</option>
+            <option value="PUT">Modification</option>
+            <option value="DELETE">Suppression</option>
+        </select>
+        <select id="select-type">
+            <option value="purchases" selected="selected">Achats</option>
+            <option value="transformations">Utilisations</option>
+            <option value="densities">Densitées</option>
+        </select>
+        <input placeholder="Écrire l'ObjectId ici" id="oid-api" hidden>
+        <input placeholder="Remplir les données ici" id="data-api">
+        <button type="button" id="ok-api">Ok</button>
+    </div>
+    <hr/>
     <div class="transactions-container">
         <div class="transactions-list" id="purchases">
 {#            {% for purchase in purchases %}#}
@@ -73,6 +89,50 @@
                     update_transactions_lists(data);
                 });
             });
+            $("button#ok-api").click(function() {
+                method = document.getElementById("select-api").value;
+                type = document.getElementById("select-type").value;
+                if (method === "POST") {
+                    data = document.getElementById("data-api").value;
+                    $.ajax({
+                        "type": method,
+                        "url": "/transactions/" + type + "/",
+                        "dataType": "json",
+                        "contentType": "application/json",
+                        "data": data
+                    });
+                    $.getJSON("/transactions", function(data) {
+                        update_transactions_lists(data);
+                    });
+                }
+                else if (method === "PUT") {
+                    oid = document.getElementById("oid-api").value;
+                    data = document.getElementById("data-api").value;
+                    $.ajax({
+                        "type": method,
+                        "url": "/transactions/" + type + "/" + oid,
+                        "dataType": "json",
+                        "contentType": "application/json",
+                        "data": data
+                    });
+                    $.getJSON("/transactions", function(data) {
+                        update_transactions_lists(data);
+                    });
+                }
+                else if (method === "DELETE") {
+                    oid = document.getElementById("oid-api").value;
+                    $.ajax({
+                        type: method,
+                        url: "/transactions/" + type + "/" + oid
+                    });
+                    $.getJSON("/transactions", function(data) {
+                        update_transactions_lists(data);
+                    });
+                }
+                else {
+                    // Do nothing
+                }
+            });
         });
 
         function update_transactions_lists(data) {
@@ -83,6 +143,26 @@
 
         function format_json(element, data) {
             document.getElementById(element).innerHTML = JSON.stringify(data, undefined, 4);
+        }
+
+        function changeApi(method) {
+            document.getElementById("oid-api").value = "";
+            document.getElementById("data-api").value = "";
+            if (method === "POST") {
+                document.getElementById("oid-api").hidden = true;
+                document.getElementById("data-api").hidden = false;
+            }
+            else if (method === "PUT") {
+                document.getElementById("oid-api").hidden = false;
+                document.getElementById("data-api").hidden = false;
+            }
+            else if (method === "DELETE") {
+                document.getElementById("oid-api").hidden = false;
+                document.getElementById("data-api").hidden = true;
+            }
+            else {
+                // Do nothing
+            }
         }
     </script>
 </body>
