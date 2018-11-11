@@ -3,37 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <title>Système d'inventaire</title>
-    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
     <style type="text/css">
+        .transactions-textarea {
+            margin:auto;
+            width: 98vh;
+            height: 30vh;
+            resize: none;
+        }
 
+        .container {
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
-    <span style="font-size:30px">Système d'inventaire</span>
+    <div class="container">
+        <span style="font-size:30px">Système d'inventaire</span>
+        <button type="button" id="refresh">Refresh</button>
+    </div>
     <hr/>
-    <div class="purchases-list" id="purchases"></div>
-    <div class="transformations-list" id="transformations"></div>
-    <div class="densities-list" id="densities"></div>
-    <hr/>
-    <b>TODO:</b>
-    <ul>
-        <li>Vérifier que l'erreur 500 du correcteur est corrigé</li>
+    <div class="transactions-container">
+        <div class="transactions-list" id="purchases">
+{#            {% for purchase in purchases %}#}
+{#                {{ purchase }}<br>#}
+{#            {% endfor %}#}
+            <textarea class="transactions-textarea" id="trans_purchases_field" readonly></textarea>
+        </div>
+        <hr/>
+        <div class="transactions-list" id="transformations">
+{#            {% for transformation in transformations %}#}
+{#                {{ transformation }}<br>#}
+{#            {% endfor %}#}
+            <textarea class="transactions-textarea" id="trans_transformations_field" readonly></textarea>
+        </div>
+        <hr/>
+        <div class="transactions-list" id="densities">
+{#            {% for density in densities %}#}
+{#                {{ density }}<br>#}
+{#            {% endfor %}#}
+            <textarea class="transactions-textarea" id="trans_densities_field" readonly></textarea>
+        </div>
+        <hr/>
+    </div>
+    <div class="todo-container">
+        <b>TODO:</b>
+        <ul>
+            <li>Vérifier que l'erreur 500 du correcteur est corrigé</li>
 
-        <li>Vérifier avec l'application Excel pour les normes : catégorie vs item pour "avg cost"</li>
+            <li>Vérifier avec l'application Excel pour les normes : catégorie vs item pour "avg cost"</li>
 
-        <li>Est-ce possible d'utiliser JsonSchema sans case sensitive?</li>
+            <li>Apprendre comment créer les éléments HTML dynamiques avec Flask et Python</li>
+            <li>Afficher les résultats de ces exploitation</li>
 
-        <li>Apprendre comment créer les éléments HTML dynamiques avec Flask et Python</li>
-        <li>Afficher les résultats de ces exploitation</li>
+            <li>Écrire le rapport à remettre en fin novembre</li>
 
-        <li>Écrire le rapport à remettre en fin novembre</li>
+            <li>Cleaner le code</li>
+        </ul>
+    </div>
 
-        <li>Cleaner le code</li>
-    </ul>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $.getJSON("/transactions", function(data) {
+                update_transactions_lists(data);
+            });
+            $("button#refresh").click(function() {
+                $.getJSON("/transactions", function(data) {
+                    update_transactions_lists(data);
+                });
+            });
+        });
 
-    <script>
+        function update_transactions_lists(data) {
+            format_json("trans_purchases_field", data.purchases);
+            format_json("trans_transformations_field", data.transformations);
+            format_json("trans_densities_field", data.densities);
+        }
 
+        function format_json(element, data) {
+            document.getElementById(element).innerHTML = JSON.stringify(data, undefined, 4);
+        }
     </script>
 </body>
 </html>
