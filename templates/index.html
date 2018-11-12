@@ -3,37 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <title>Système d'inventaire</title>
-    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
     <style type="text/css">
+        .container {
+            display: inline-block;
+        }
 
+        .transactions-textarea {
+            margin:auto;
+            width: 98%;
+            height: 30vh;
+            resize: none;
+        }
+
+        #data-api {
+            width: 33%;
+        }
     </style>
 </head>
 <body>
-    <span style="font-size:30px">Système d'inventaire</span>
+    <div class="container">
+        <span style="font-size:30px">Système d'inventaire</span>
+        <button type="button" id="refresh">Refresh</button>
+    </div>
     <hr/>
-    <div class="purchases-list" id="purchases"></div>
-    <div class="transformations-list" id="transformations"></div>
-    <div class="densities-list" id="densities"></div>
+    <div class="container-api">
+        <span>Manipulation de données: </span>
+        <select id="select-api" onchange="changeAPI(this.value)">
+            <option value="POST" selected="selected">Insertion</option>
+            <option value="PUT">Modification</option>
+            <option value="DELETE">Suppression</option>
+        </select>
+        <select id="select-type" onchange="changeType(this.value)">
+            <option value="purchases" selected="selected">Achats</option>
+            <option value="transformations">Utilisations</option>
+            <option value="densities">Densitées</option>
+        </select>
+        <input placeholder="Écrire l'ObjectId ici" id="oid-api" hidden>
+        <input placeholder="Remplir les données ici" id="data-api">
+        <button type="button" id="ok-api">Ok</button>
+    </div>
     <hr/>
-    <b>TODO:</b>
-    <ul>
-        <li>Vérifier que l'erreur 500 du correcteur est corrigé</li>
+    <div class="transactions-container">
+        <div class="transactions-list" id="purchases">
+{#            {% for purchase in purchases %}#}
+{#                {{ purchase }}<br>#}
+{#            {% endfor %}#}
+            <textarea class="transactions-textarea" id="trans_purchases_field" readonly></textarea>
+        </div>
+        <hr/>
+        <div class="transactions-list" id="transformations">
+{#            {% for transformation in transformations %}#}
+{#                {{ transformation }}<br>#}
+{#            {% endfor %}#}
+            <textarea class="transactions-textarea" id="trans_transformations_field" readonly></textarea>
+        </div>
+        <hr/>
+        <div class="transactions-list" id="densities">
+{#            {% for density in densities %}#}
+{#                {{ density }}<br>#}
+{#            {% endfor %}#}
+            <textarea class="transactions-textarea" id="trans_densities_field" readonly></textarea>
+        </div>
+        <hr/>
+    </div>
+    <div class="container-fct">
+        <div id="select-fct">
+            <input type="radio" name="btn-fct"
+                   id="total-fct" value="total" checked>
+            <label for="total-fct">Coût Total</label>
+            <input type="radio" name="btn-fct"
+                   id="avg-buy-fct" value="avg-buy">
+            <label for="avg-buy-fct">Coût Moyen avec unité d'achat</label>
+            <input type="radio" name="btn-fct"
+                   id="avg-use-fct" value="avg-use">
+            <label for="avg-use-fct">Coût Moyen avec unité d'utilisation</label>
+            <input type="radio" name="btn-fct"
+                   id="image-fct" value="image">
+            <label for="image-fct">Image des quantités restantes</label>
+        </div>
+        <br/>
+        <div class="container">
+            <span>Date: </span>
+            <input type="date" data-date-inline-picker="false" data-date-open-on-focus="true" id="date-fct">
+            <span>Catégorie: </span>
+            <input type="text" id="cat-fct">
+            <button type="button" id="ok-fct">Ok</button>
+        </div>
+        <br/>
+        <div class="container">
 
-        <li>Vérifier avec l'application Excel pour les normes : catégorie vs item pour "avg cost"</li>
+        </div>
+    </div>
+    <hr/>
+    <div class="todo-container">
+        <b>TODO:</b>
+        <ul>
+            <li>Vérifier que l'erreur 500 du correcteur est corrigé</li>
 
-        <li>Est-ce possible d'utiliser JsonSchema sans case sensitive?</li>
+            <li>Vérifier avec l'application Excel pour les normes : catégorie vs item pour "avg cost"</li>
 
-        <li>Apprendre comment créer les éléments HTML dynamiques avec Flask et Python</li>
-        <li>Afficher les résultats de ces exploitation</li>
+            <li>Vérifier que 'tax' soit toujours égale 'total' - 'stotal'</li>
 
-        <li>Écrire le rapport à remettre en fin novembre</li>
+            <li>Apprendre comment créer les éléments HTML dynamiques avec Flask et Python</li>
+            <li>Afficher les résultats de ces exploitation</li>
 
-        <li>Cleaner le code</li>
-    </ul>
+            <li>Écrire le rapport à remettre en fin novembre</li>
 
-    <script>
+            <li>Cleaner le code</li>
+        </ul>
+    </div>
 
+    <script type="text/javascript">
+        let format_purchase =
+            "{" +
+                "'date': '', " +
+                "'item': '', " +
+                "'qte': , " +
+                "'unit': '', " +
+                "'total': , " +
+                "'stotal': , " +
+                "'tax': " +
+            "}";
+        let format_transformation =
+            "{" +
+                "'date': '', " +
+                "'item': '', " +
+                "'qte': , " +
+                "'unit': '', " +
+                "'job_id': , " +
+                "'type': ''" +
+            "}";
+        let format_density =
+            "{" +
+                "'Information': 'density', " +
+                "'item': '', " +
+                "'g': , " +
+                "'ml': " +
+            "}";
+
+        $(document).ready(function() {
+            document.getElementById("data-api").value = format_purchase;
+            $.getJSON("/transactions", function(data) {
+                update_transactions_lists(data);
+            });
+            $("button#refresh").click(function() {
+                $.getJSON("/transactions", function(data) {
+                    update_transactions_lists(data);
+                });
+            });
+            $("button#ok-api").click(function() {
+                method = document.getElementById("select-api").value;
+                type = document.getElementById("select-type").value;
+                if (method === "POST") {
+                    data = document.getElementById("data-api").value.replace(/'/g, "\"");
+                    $.ajax({
+                        "type": method,
+                        "url": "/transactions",
+                        "dataType": "json",
+                        "contentType": "application/json",
+                        "data": data
+                    });
+                    $.getJSON("/transactions", function(data) {
+                        update_transactions_lists(data);
+                    });
+                }
+                else if (method === "PUT") {
+                    oid = document.getElementById("oid-api").value;
+                    data = document.getElementById("data-api").value.replace(/'/g, "\"");
+                    $.ajax({
+                        "type": method,
+                        "url": "/transactions/" + type + "/" + oid,
+                        "dataType": "json",
+                        "contentType": "application/json",
+                        "data": data
+                    });
+                    $.getJSON("/transactions", function(data) {
+                        update_transactions_lists(data);
+                    });
+                }
+                else if (method === "DELETE") {
+                    oid = document.getElementById("oid-api").value;
+                    $.ajax({
+                        type: method,
+                        url: "/transactions/" + type + "/" + oid
+                    });
+                    $.getJSON("/transactions", function(data) {
+                        update_transactions_lists(data);
+                    });
+                }
+                else {
+                    // Do nothing
+                }
+            });
+            $("button#ok-fct").click(function() {
+                date = revertDate(document.getElementById("date-fct").value);
+                if(document.getElementById("total-fct").checked) {
+                    category = document.getElementById("cat-fct").value;
+                    
+                }
+                else if (document.getElementById("avg-buy-fct").checked) {
+                    category = document.getElementById("cat-fct").value;
+
+                }
+                else if (document.getElementById("avg-use-fct").checked) {
+                    category = document.getElementById("cat-fct").value;
+
+                }
+                else if (document.getElementById("image-fct").checked) {
+
+                }
+                else {
+                    // Do nothing
+                }
+            });
+        });
+
+        function update_transactions_lists(data) {
+            format_json("trans_purchases_field", data.purchases);
+            format_json("trans_transformations_field", data.transformations);
+            format_json("trans_densities_field", data.densities);
+        }
+
+        function format_json(element, data) {
+            document.getElementById(element).innerHTML = JSON.stringify(data, undefined, 4);
+        }
+
+        function changeAPI(method) {
+            document.getElementById("oid-api").value = "";
+            document.getElementById("data-api").value = "";
+            if (method === "POST") {
+                document.getElementById("oid-api").hidden = true;
+                document.getElementById("data-api").hidden = false;
+                type = document.getElementById("select-type").value;
+                changeType(type);
+            }
+            else if (method === "PUT") {
+                document.getElementById("oid-api").hidden = false;
+                document.getElementById("data-api").hidden = false;
+            }
+            else if (method === "DELETE") {
+                document.getElementById("oid-api").hidden = false;
+                document.getElementById("data-api").hidden = true;
+            }
+            else {
+                // Do nothing
+            }
+        }
+
+        function changeType(type) {
+            method = document.getElementById("select-api").value;
+            if (method === "POST") {
+                if (type === "purchases") {
+                    document.getElementById("data-api").value = format_purchase;
+                }
+                else if (type === "transformations") {
+                    document.getElementById("data-api").value = format_transformation;
+                }
+                else if (type === "densities") {
+                    document.getElementById("data-api").value = format_density;
+                }
+                else {
+                    // Do nothing
+                }
+            }
+            else {
+                // Do nothing
+            }
+        }
+
+        function revertDate(new_date) {
+            DATE_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
+               "October", "November", "December"];
+            old_date = new_date.split("-");
+            old_date = old_date[2].replace(/^0+(?!\.|$)/, "") + " " + DATE_MONTHS[parseInt(old_date[1])-1] + " " + old_date[0];
+            return old_date
+        }
     </script>
 </body>
 </html>
