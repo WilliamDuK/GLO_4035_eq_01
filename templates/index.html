@@ -68,6 +68,33 @@
         </div>
         <hr/>
     </div>
+    <div class="fct-container">
+        <input type="radio" name="fct-api"
+               id="fct-total" value="total" checked>
+        <label for="fct-total"></label>
+        <input type="radio" name="fct-api"
+               id="fct-avg-buy" value="avg-buy">
+        <label for="fct-avg-buy"></label>
+        <input type="radio" name="fct-api"
+               id="fct-avg-use" value="avg-use">
+        <label for="fct-avg-use"></label>
+        <input type="radio" name="fct-api"
+               id="fct-image" value="image">
+        <label for="fct-image"></label>
+    </div>
+    <br/>
+    <div class="container">
+        <span>Date: </span>
+        <input type="date" data-date-inline-picker="false" data-date-open-on-focus="true" id="fct-date">
+        <span>Catégorie: </span>
+        <input type="text" id="fct-cat">
+        <button type="button" id="ok-fct">Ok</button>
+    </div>
+    <br/>
+    <div class="container">
+
+    </div>
+    <hr/>
     <div class="todo-container">
         <b>TODO:</b>
         <ul>
@@ -221,6 +248,14 @@
             else {
                 // Do nothing
             }
+        }
+
+        function revertDate(new_date) {
+            DATE_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
+               "October", "November", "December"];
+            old_date = new_date.split("-");
+            old_date = old_date[2].replace(/^0+(?!\.|$)/, "") + " " + DATE_MONTHS[parseInt(old_date[1])-1] + " " + old_date[0];
+            return old_date
         }
     </script>
 </body>
