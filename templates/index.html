@@ -198,8 +198,25 @@
                 }
             });
             $("button#ok-fct").click(function() {
+                date = revertDate(document.getElementById("date-fct").value);
+                if(document.getElementById("total-fct").checked) {
+                    category = document.getElementById("cat-fct").value;
+                    
+                }
+                else if (document.getElementById("avg-buy-fct").checked) {
+                    category = document.getElementById("cat-fct").value;
 
-                date = document.getElementById().value;
+                }
+                else if (document.getElementById("avg-use-fct").checked) {
+                    category = document.getElementById("cat-fct").value;
+
+                }
+                else if (document.getElementById("image-fct").checked) {
+
+                }
+                else {
+                    // Do nothing
+                }
             });
         });
 
