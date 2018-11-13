@@ -283,7 +283,10 @@
                         newElem = document.createElement("span");
                         newElem.innerHTML = "Date: " + date + "<br/>" +
                             "--------------------------<br/>";
-
+                        for (i = 0; i < data.length; i++) {
+                            newElem.innerHTML += "Matériel: " + data[i]["item"] + "<br/>";
+                            newElem.innerHTML += "Quantité restante : " + data[i]["total qte"] + " " + data[i]["unit"] + "<br/><br/>";
+                        }
                         myDiv.appendChild(document.createElement("br"));
                         myDiv.appendChild(newElem);
                     });
