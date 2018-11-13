@@ -389,7 +389,7 @@ def avg_cost_buy(date, category="Consumable", tax=True):
 # à une date précise d'une catégorie de matériel.
 @application.route("/avg_cost_use/<date>/<category>/<tax>")
 def avg_cost_use(date, category="Consumable", tax=True):
-    req = avg_cost_buy(date, category, tax)
+    req = loads(avg_cost_buy(date, category, tax))
     if not req:
         return jsonify(
             result="Failure",

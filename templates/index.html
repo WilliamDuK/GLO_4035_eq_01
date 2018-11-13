@@ -94,9 +94,7 @@
             <button type="button" id="ok-fct">Ok</button>
         </div>
         <br/>
-        <div class="container">
-
-        </div>
+        <div class="container" id="answer-fct"></div>
     </div>
     <hr/>
     <div class="todo-container">
@@ -107,9 +105,6 @@
             <li>Vérifier avec l'application Excel pour les normes : catégorie vs item pour "avg cost"</li>
 
             <li>Vérifier que 'tax' soit toujours égale 'total' - 'stotal'</li>
-
-            <li>Apprendre comment créer les éléments HTML dynamiques avec Flask et Python</li>
-            <li>Afficher les résultats de ces exploitation</li>
 
             <li>Écrire le rapport à remettre en fin novembre</li>
 
@@ -208,7 +203,12 @@
                         "type": "GET",
                         "url": "/total_cost/" + date + "/" + category + "/" + tax,
                     }).done(function(data) {
-
+                        myDiv = document.getElementById("answer-fct");
+                        myDiv.innerHTML = "";
+                        newElem = document.createElement("div");
+                        
+                        myDiv.appendChild(document.createElement("br"));
+                        myDiv.appendChild(newElem);
                     });
                 }
                 else if (document.getElementById("avg-buy-fct").checked) {
@@ -218,7 +218,12 @@
                         "type": "GET",
                         "url": "/avg_cost_buy/" + date + "/" + category + "/" + tax,
                     }).done(function(data) {
+                        myDiv = document.getElementById("answer-fct");
+                        myDiv.innerHTML = "";
+                        newElem = document.createElement("");
 
+                        myDiv.appendChild(document.createElement("br"));
+                        myDiv.appendChild(newElem);
                     });
                 }
                 else if (document.getElementById("avg-use-fct").checked) {
@@ -228,7 +233,12 @@
                         "type": "GET",
                         "url": "/avg_cost_use/" + date + "/" + category + "/" + tax,
                     }).done(function(data) {
+                        myDiv = document.getElementById("answer-fct");
+                        myDiv.innerHTML = "";
+                        newElem = document.createElement("");
 
+                        myDiv.appendChild(document.createElement("br"));
+                        myDiv.appendChild(newElem);
                     });
                 }
                 else if (document.getElementById("image-fct").checked) {
@@ -236,7 +246,12 @@
                         "type": "GET",
                         "url": "/image/" + date,
                     }).done(function(data) {
+                        myDiv = document.getElementById("answer-fct");
+                        myDiv.innerHTML = "";
+                        newElem = document.createElement("");
 
+                        myDiv.appendChild(document.createElement("br"));
+                        myDiv.appendChild(newElem);
                     });
                 }
                 else {
@@ -307,6 +322,8 @@
         }
 
         function changeFct(fct) {
+            myDiv = document.getElementById("answer-fct");
+            myDiv.innerHTML = "";
             if(document.getElementById("total-fct").checked) {
                 document.getElementById("cat-label").hidden = false;
                 document.getElementById("cat-fct").hidden = false;
