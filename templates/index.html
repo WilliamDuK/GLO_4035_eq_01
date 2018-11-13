@@ -203,20 +203,20 @@
                 date = revertDate(document.getElementById("date-fct").value);
                 if(document.getElementById("total-fct").checked) {
                     category = document.getElementById("cat-fct").value;
-                    tax = document.getElementById("tax-fct").value;
+                    tax = document.getElementById("tax-fct").checked;
                     $.ajax({
-                        "type": "GET",
+                        "type": "POST",
                         "url": "/total_cost/" + date + "/" + category + "/" + tax,
 
                     }).done(function(data) {
-
+                        alert("CT!")
                     });
                 }
                 else if (document.getElementById("avg-buy-fct").checked) {
                     category = document.getElementById("cat-fct").value;
-                    tax = document.getElementById("tax-fct").value;
+                    tax = document.getElementById("tax-fct").checked;
                     $.ajax({
-                        "type": "GET",
+                        "type": "POST",
                         "url": "/avg_cost_buy/" + date + "/" + category + "/" + tax,
 
                     }).done(function(data) {
@@ -225,9 +225,9 @@
                 }
                 else if (document.getElementById("avg-use-fct").checked) {
                     category = document.getElementById("cat-fct").value;
-                    tax = document.getElementById("tax-fct").value;
+                    tax = document.getElementById("tax-fct").checked;
                     $.ajax({
-                        "type": "GET",
+                        "type": "POST",
                         "url": "/avg_cost_use/" + date + "/" + category + "/" + tax,
 
                     }).done(function(data) {
@@ -236,7 +236,7 @@
                 }
                 else if (document.getElementById("image-fct").checked) {
                     $.ajax({
-                        "type": "GET",
+                        "type": "POST",
                         "url": "/image/" + date,
 
                     }).done(function(data) {

@@ -298,15 +298,15 @@ def delete_one_transaction(trans_type, trans_id):
 # Le coût total à une date précise pour une catégorie de matériel.
 @application.route("/total_cost/<date>/<category>/<tax>")
 def total_cost(date, category="Consumable", tax=True):
-    if tax:
+    if tax is True or "true":
         tax_field = "$total"
-    else:
+    elif tax is False or "false":
         tax_field = "$stotal"
     pipeline = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
         {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
-        {"$project": {"_id": 0, "item": "$_id", "total cost": "$total cost", "unit": {"$literal": "$"}}},
+        {"$project": {"_id": 0, "item": "$_id", "total cost": "$total cost"}},
         {"$sort": {"item": 1}}
     ]
     req = list(transactions.purchases.aggregate(pipeline))
@@ -333,9 +333,9 @@ def total_cost(date, category="Consumable", tax=True):
 # à une date précise d'une catégorie de matériel.
 @application.route("/avg_cost_buy/<date>/<category>/<tax>")
 def avg_cost_buy(date, category="Consumable", tax=True):
-    if tax:
+    if tax is True or "true":
         tax_field = "$total"
-    else:
+    elif tax is False or "false":
         tax_field = "$stotal"
     pipeline = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
