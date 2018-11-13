@@ -298,9 +298,9 @@ def delete_one_transaction(trans_type, trans_id):
 # Le coût total à une date précise pour une catégorie de matériel.
 @application.route("/total_cost/<date>/<category>/<tax>")
 def total_cost(date, category="Consumable", tax=True):
-    if tax is True or "true":
+    if tax is True or tax == "true":
         tax_field = "$total"
-    elif tax is False or "false":
+    elif tax is False or tax == "false":
         tax_field = "$stotal"
     pipeline = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
@@ -334,9 +334,9 @@ def total_cost(date, category="Consumable", tax=True):
 # à une date précise d'une catégorie de matériel.
 @application.route("/avg_cost_buy/<date>/<category>/<tax>")
 def avg_cost_buy(date, category="Consumable", tax=True):
-    if tax is True or "true":
+    if tax is True or tax == "true":
         tax_field = "$total"
-    elif tax is False or "false":
+    elif tax is False or tax == "false":
         tax_field = "$stotal"
     pipeline = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
