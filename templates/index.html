@@ -207,7 +207,8 @@
                         myDiv = document.getElementById("answer-fct");
                         myDiv.innerHTML = "";
                         newElem = document.createElement("span");
-                        newElem.innerHTML = "Date: " + date + "<br/>";
+                        newElem.innerHTML = "Date: " + date + "<br/>" +
+                            "--------------------------<br/>";
                         newElem.innerHTML += "Catégorie: " + data["category"] + "<br/>";
                         if (tax === true) {
                             newElem.innerHTML += "Coût Total (avec taxes): " + data["total cost"] + " " + data["unit"];
@@ -229,8 +230,18 @@
                         data = JSON.parse(data);
                         myDiv = document.getElementById("answer-fct");
                         myDiv.innerHTML = "";
-                        newElem = document.createElement("");
-
+                        newElem = document.createElement("span");
+                        newElem.innerHTML = "Date: " + date + "<br/>" +
+                            "--------------------------<br/>";
+                        for (i = 0; i < data.length; i++) {
+                            newElem.innerHTML += "Matériel de la catégorie: " + data[i]["item"] + "<br/>";
+                            if (tax === true) {
+                                newElem.innerHTML += "Coût Moyen (avec taxes): " + data[i]["avg cost"] + " " + data[i]["unit"] + "<br/><br/>";
+                            }
+                            else {
+                                newElem.innerHTML += "Coût Moyen (sans taxes): " + data[i]["avg cost"] + " " + data[i]["unit"] + "<br/><br/>";
+                            }
+                        }
                         myDiv.appendChild(document.createElement("br"));
                         myDiv.appendChild(newElem);
                     });
@@ -245,8 +256,18 @@
                         data = JSON.parse(data);
                         myDiv = document.getElementById("answer-fct");
                         myDiv.innerHTML = "";
-                        newElem = document.createElement("");
-
+                        newElem = document.createElement("span");
+                        newElem.innerHTML = "Date: " + date + "<br/>" +
+                            "--------------------------<br/>";
+                        for (i = 0; i < data.length; i++) {
+                            newElem.innerHTML += "Matériel de la catégorie: " + data[i]["item"] + "<br/>";
+                            if (tax === true) {
+                                newElem.innerHTML += "Coût Moyen (avec taxes): " + data[i]["avg cost"] + " " + data[i]["unit"] + "<br/><br/>";
+                            }
+                            else {
+                                newElem.innerHTML += "Coût Moyen (sans taxes): " + data[i]["avg cost"] + " " + data[i]["unit"] + "<br/><br/>";
+                            }
+                        }
                         myDiv.appendChild(document.createElement("br"));
                         myDiv.appendChild(newElem);
                     });
@@ -259,7 +280,9 @@
                         data = JSON.parse(data);
                         myDiv = document.getElementById("answer-fct");
                         myDiv.innerHTML = "";
-                        newElem = document.createElement("");
+                        newElem = document.createElement("span");
+                        newElem.innerHTML = "Date: " + date + "<br/>" +
+                            "--------------------------<br/>";
 
                         myDiv.appendChild(document.createElement("br"));
                         myDiv.appendChild(newElem);
