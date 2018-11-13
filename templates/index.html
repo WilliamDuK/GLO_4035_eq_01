@@ -161,9 +161,10 @@
                         "dataType": "json",
                         "contentType": "application/json",
                         "data": data
-                    });
-                    $.getJSON("/transactions", function(data) {
-                        update_transactions_lists(data);
+                    }).done(function() {
+                        $.getJSON("/transactions", function(data) {
+                            update_transactions_lists(data);
+                        });
                     });
                 }
                 else if (method === "PUT") {
@@ -175,9 +176,10 @@
                         "dataType": "json",
                         "contentType": "application/json",
                         "data": data
-                    });
-                    $.getJSON("/transactions", function(data) {
-                        update_transactions_lists(data);
+                    }).done(function() {
+                        $.getJSON("/transactions", function(data) {
+                            update_transactions_lists(data);
+                        });
                     });
                 }
                 else if (method === "DELETE") {
@@ -185,13 +187,11 @@
                     $.ajax({
                         "type": method,
                         "url": "/transactions/" + type + "/" + oid
+                    }).done(function() {
+                        $.getJSON("/transactions", function(data) {
+                            update_transactions_lists(data);
+                        });
                     });
-                    $.getJSON("/transactions", function(data) {
-                        update_transactions_lists(data);
-                    });
-                }
-                else {
-                    // Do nothing
                 }
             });
             $("button#ok-fct").click(function() {
@@ -291,9 +291,6 @@
                         myDiv.appendChild(newElem);
                     });
                 }
-                else {
-                    // Do nothing
-                }
             });
         });
 
@@ -324,9 +321,6 @@
                 document.getElementById("oid-api").hidden = false;
                 document.getElementById("data-api").hidden = true;
             }
-            else {
-                // Do nothing
-            }
         }
 
         function changeType(type) {
@@ -341,12 +335,6 @@
                 else if (type === "densities") {
                     document.getElementById("data-api").value = format_density;
                 }
-                else {
-                    // Do nothing
-                }
-            }
-            else {
-                // Do nothing
             }
         }
 
@@ -384,9 +372,6 @@
                 document.getElementById("cat-fct").hidden = true;
                 document.getElementById("tax-label").hidden = true;
                 document.getElementById("tax-fct").hidden =true ;
-            }
-            else {
-                // Do nothing
             }
         }
     </script>
