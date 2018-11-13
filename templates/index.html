@@ -47,23 +47,14 @@
     <hr/>
     <div class="transactions-container">
         <div class="transactions-list" id="purchases">
-{#            {% for purchase in purchases %}#}
-{#                {{ purchase }}<br>#}
-{#            {% endfor %}#}
             <textarea class="transactions-textarea" id="trans_purchases_field" readonly></textarea>
         </div>
         <hr/>
         <div class="transactions-list" id="transformations">
-{#            {% for transformation in transformations %}#}
-{#                {{ transformation }}<br>#}
-{#            {% endfor %}#}
             <textarea class="transactions-textarea" id="trans_transformations_field" readonly></textarea>
         </div>
         <hr/>
         <div class="transactions-list" id="densities">
-{#            {% for density in densities %}#}
-{#                {{ density }}<br>#}
-{#            {% endfor %}#}
             <textarea class="transactions-textarea" id="trans_densities_field" readonly></textarea>
         </div>
         <hr/>
@@ -71,30 +62,30 @@
     <div class="container-fct">
         <div id="select-fct">
             <input type="radio" name="btn-fct"
-                   id="total-fct" value="total" checked>
+                   id="total-fct" value="total" onchange="changeFct()" checked>
             <label for="total-fct">Coût Total</label>
             <input type="radio" name="btn-fct"
-                   id="avg-buy-fct" value="avg-buy">
+                   id="avg-buy-fct" value="avg-buy" onchange="changeFct()">
             <label for="avg-buy-fct">Coût Moyen avec unité d'achat</label>
             <input type="radio" name="btn-fct"
-                   id="avg-use-fct" value="avg-use">
+                   id="avg-use-fct" value="avg-use" onchange="changeFct()">
             <label for="avg-use-fct">Coût Moyen avec unité d'utilisation</label>
             <input type="radio" name="btn-fct"
-                   id="image-fct" value="image">
+                   id="image-fct" value="image" onchange="changeFct()">
             <label for="image-fct">Image des quantités restantes</label>
         </div>
         <br/>
         <div class="container">
-            <span>Date: </span>
+            <label for="date-fct">Date: </label>
             <input type="date" data-date-inline-picker="false" data-date-open-on-focus="true" id="date-fct">
-            <span>Catégorie: </span>
+            <label for="cat-fct" id="cat-label">Catégorie: </label>
             <input type="text" id="cat-fct">
+            <label for="tax-fct" id="tax-label">Taxe: </label>
+            <input type="checkbox" id="tax-fct" checked>
             <button type="button" id="ok-fct">Ok</button>
         </div>
         <br/>
-        <div class="container">
-
-        </div>
+        <div id="answer-fct"></div>
     </div>
     <hr/>
     <div class="todo-container">
@@ -105,9 +96,6 @@
             <li>Vérifier avec l'application Excel pour les normes : catégorie vs item pour "avg cost"</li>
 
             <li>Vérifier que 'tax' soit toujours égale 'total' - 'stotal'</li>
-
-            <li>Apprendre comment créer les éléments HTML dynamiques avec Flask et Python</li>
-            <li>Afficher les résultats de ces exploitation</li>
 
             <li>Écrire le rapport à remettre en fin novembre</li>
 
@@ -164,9 +152,10 @@
                         "dataType": "json",
                         "contentType": "application/json",
                         "data": data
-                    });
-                    $.getJSON("/transactions", function(data) {
-                        update_transactions_lists(data);
+                    }).done(function() {
+                        $.getJSON("/transactions", function(data) {
+                            update_transactions_lists(data);
+                        });
                     });
                 }
                 else if (method === "PUT") {
@@ -178,44 +167,120 @@
                         "dataType": "json",
                         "contentType": "application/json",
                         "data": data
-                    });
-                    $.getJSON("/transactions", function(data) {
-                        update_transactions_lists(data);
+                    }).done(function() {
+                        $.getJSON("/transactions", function(data) {
+                            update_transactions_lists(data);
+                        });
                     });
                 }
                 else if (method === "DELETE") {
                     oid = document.getElementById("oid-api").value;
                     $.ajax({
-                        type: method,
-                        url: "/transactions/" + type + "/" + oid
+                        "type": method,
+                        "url": "/transactions/" + type + "/" + oid
+                    }).done(function() {
+                        $.getJSON("/transactions", function(data) {
+                            update_transactions_lists(data);
+                        });
                     });
-                    $.getJSON("/transactions", function(data) {
-                        update_transactions_lists(data);
-                    });
-                }
-                else {
-                    // Do nothing
                 }
             });
             $("button#ok-fct").click(function() {
                 date = revertDate(document.getElementById("date-fct").value);
                 if(document.getElementById("total-fct").checked) {
                     category = document.getElementById("cat-fct").value;
-                    
+                    tax = document.getElementById("tax-fct").checked;
+                    $.ajax({
+                        "type": "GET",
+                        "url": "/total_cost/" + date + "/" + category + "/" + tax,
+                    }).done(function(data) {
+                        data = JSON.parse(data);
+                        myDiv = document.getElementById("answer-fct");
+                        myDiv.innerHTML = "";
+                        newElem = document.createElement("span");
+                        newElem.innerHTML = "Date: " + date + "<br/>" +
+                            "--------------------------<br/>";
+                        newElem.innerHTML += "Catégorie: " + data["category"] + "<br/>";
+                        if (tax === true) {
+                            newElem.innerHTML += "Coût Total (avec taxes): " + data["total cost"] + " " + data["unit"];
+                        }
+                        else {
+                            newElem.innerHTML += "Coût Total (sans taxes): " + data["total cost"] + " " + data["unit"];
+                        }
+                        myDiv.appendChild(document.createElement("br"));
+                        myDiv.appendChild(newElem);
+                    });
                 }
                 else if (document.getElementById("avg-buy-fct").checked) {
                     category = document.getElementById("cat-fct").value;
-
+                    tax = document.getElementById("tax-fct").checked;
+                    $.ajax({
+                        "type": "GET",
+                        "url": "/avg_cost_buy/" + date + "/" + category + "/" + tax,
+                    }).done(function(data) {
+                        data = JSON.parse(data);
+                        myDiv = document.getElementById("answer-fct");
+                        myDiv.innerHTML = "";
+                        newElem = document.createElement("span");
+                        newElem.innerHTML = "Date: " + date + "<br/>" +
+                            "--------------------------<br/>";
+                        for (i = 0; i < data.length; i++) {
+                            newElem.innerHTML += "Matériel de la catégorie: " + data[i]["item"] + "<br/>";
+                            if (tax === true) {
+                                newElem.innerHTML += "Coût Moyen (avec taxes): " + data[i]["avg cost"] + " " + data[i]["unit"] + "<br/><br/>";
+                            }
+                            else {
+                                newElem.innerHTML += "Coût Moyen (sans taxes): " + data[i]["avg cost"] + " " + data[i]["unit"] + "<br/><br/>";
+                            }
+                        }
+                        myDiv.appendChild(document.createElement("br"));
+                        myDiv.appendChild(newElem);
+                    });
                 }
                 else if (document.getElementById("avg-use-fct").checked) {
                     category = document.getElementById("cat-fct").value;
-
+                    tax = document.getElementById("tax-fct").checked;
+                    $.ajax({
+                        "type": "GET",
+                        "url": "/avg_cost_use/" + date + "/" + category + "/" + tax,
+                    }).done(function(data) {
+                        data = JSON.parse(data);
+                        myDiv = document.getElementById("answer-fct");
+                        myDiv.innerHTML = "";
+                        newElem = document.createElement("span");
+                        newElem.innerHTML = "Date: " + date + "<br/>" +
+                            "--------------------------<br/>";
+                        for (i = 0; i < data.length; i++) {
+                            newElem.innerHTML += "Matériel de la catégorie: " + data[i]["item"] + "<br/>";
+                            if (tax === true) {
+                                newElem.innerHTML += "Coût Moyen (avec taxes): " + data[i]["avg cost"] + " " + data[i]["unit"] + "<br/><br/>";
+                            }
+                            else {
+                                newElem.innerHTML += "Coût Moyen (sans taxes): " + data[i]["avg cost"] + " " + data[i]["unit"] + "<br/><br/>";
+                            }
+                        }
+                        myDiv.appendChild(document.createElement("br"));
+                        myDiv.appendChild(newElem);
+                    });
                 }
                 else if (document.getElementById("image-fct").checked) {
-
-                }
-                else {
-                    // Do nothing
+                    $.ajax({
+                        "type": "GET",
+                        "url": "/image/" + date,
+                    }).done(function(data) {
+                        data = JSON.parse(data);
+                        myDiv = document.getElementById("answer-fct");
+                        myDiv.innerHTML = "";
+                        newElem = document.createElement("span");
+                        newElem.innerHTML = "Date: " + date + "<br/>" +
+                            "--------------------------<br/>";
+                        for (i = 0; i < data.length; i++) {
+                            newElem.innerHTML += "Matériel: " + data[i]["item"] + "<br/>";
+                            newElem.innerHTML += "Quantité restante : " + data[i]["total qte"] + " " + data[i]["unit"] + "<br/><br/>";
+                        }
+                        myDiv.appendChild(document.createElement("br"));
+                        myDiv.appendChild(newElem);
+                    });
                 }
             });
         });
@@ -247,9 +312,6 @@
                 document.getElementById("oid-api").hidden = false;
                 document.getElementById("data-api").hidden = true;
             }
-            else {
-                // Do nothing
-            }
         }
 
         function changeType(type) {
@@ -264,12 +326,6 @@
                 else if (type === "densities") {
                     document.getElementById("data-api").value = format_density;
                 }
-                else {
-                    // Do nothing
-                }
-            }
-            else {
-                // Do nothing
             }
         }
 
@@ -279,6 +335,35 @@
             old_date = new_date.split("-");
             old_date = old_date[2].replace(/^0+(?!\.|$)/, "") + " " + DATE_MONTHS[parseInt(old_date[1])-1] + " " + old_date[0];
             return old_date
+        }
+
+        function changeFct(fct) {
+            myDiv = document.getElementById("answer-fct");
+            myDiv.innerHTML = "";
+            if(document.getElementById("total-fct").checked) {
+                document.getElementById("cat-label").hidden = false;
+                document.getElementById("cat-fct").hidden = false;
+                document.getElementById("tax-label").hidden = false;
+                document.getElementById("tax-fct").hidden = false;
+            }
+            else if (document.getElementById("avg-buy-fct").checked) {
+                document.getElementById("cat-label").hidden = false;
+                document.getElementById("cat-fct").hidden = false;
+                document.getElementById("tax-label").hidden = false;
+                document.getElementById("tax-fct").hidden = false;
+            }
+            else if (document.getElementById("avg-use-fct").checked) {
+                document.getElementById("cat-label").hidden = false;
+                document.getElementById("cat-fct").hidden = false;
+                document.getElementById("tax-label").hidden = false;
+                document.getElementById("tax-fct").hidden = false;
+            }
+            else if (document.getElementById("image-fct").checked) {
+                document.getElementById("cat-label").hidden = true;
+                document.getElementById("cat-fct").hidden = true;
+                document.getElementById("tax-label").hidden = true;
+                document.getElementById("tax-fct").hidden =true ;
+            }
         }
     </script>
 </body>
