@@ -324,9 +324,10 @@ def total_cost(date, category="Consumable", tax=True):
         ans["total cost"] = 0
         for item in req:
             ans["total cost"] += item["total cost"]
+        ans["total cost"] = round(ans["total cost"], 2)
         # Ajout de l'unité
         ans["unit"] = "$"
-        return ans
+        return dumps(ans)
 
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
@@ -381,7 +382,7 @@ def avg_cost_buy(date, category="Consumable", tax=True):
             item["unit"] = unit
         # Vider la list req
         del req[:]
-        return ans
+        return dumps(ans)
 
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'utilisation,
@@ -398,7 +399,7 @@ def avg_cost_use(date, category="Consumable", tax=True):
     else:
         # Convertir en unité d'utilisation
         ans = convert_unit_to_use_avg(req)
-        return ans
+        return dumps(ans)
 
 
 # L'image à une date précise de la quantité restante, en unité d'utilisation,
@@ -477,7 +478,7 @@ def image(date):
         del req_use[:]
         # Convertir en unité d'utilisation
         ans = convert_unit_to_use_img(ans)
-        return ans
+        return dumps(ans)
 
 
 # Retourne une liste contenant seulement les éléments Purchase

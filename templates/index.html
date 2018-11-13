@@ -205,7 +205,7 @@
                     category = document.getElementById("cat-fct").value;
                     tax = document.getElementById("tax-fct").checked;
                     $.ajax({
-                        "type": "POST",
+                        "type": "GET",
                         "url": "/total_cost/" + date + "/" + category + "/" + tax,
 
                     }).done(function(data) {
@@ -216,7 +216,7 @@
                     category = document.getElementById("cat-fct").value;
                     tax = document.getElementById("tax-fct").checked;
                     $.ajax({
-                        "type": "POST",
+                        "type": "GET",
                         "url": "/avg_cost_buy/" + date + "/" + category + "/" + tax,
 
                     }).done(function(data) {
@@ -227,7 +227,7 @@
                     category = document.getElementById("cat-fct").value;
                     tax = document.getElementById("tax-fct").checked;
                     $.ajax({
-                        "type": "POST",
+                        "type": "GET",
                         "url": "/avg_cost_use/" + date + "/" + category + "/" + tax,
 
                     }).done(function(data) {
@@ -236,7 +236,7 @@
                 }
                 else if (document.getElementById("image-fct").checked) {
                     $.ajax({
-                        "type": "POST",
+                        "type": "GET",
                         "url": "/image/" + date,
 
                     }).done(function(data) {
