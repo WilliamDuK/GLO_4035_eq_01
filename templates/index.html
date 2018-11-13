@@ -71,24 +71,26 @@
     <div class="container-fct">
         <div id="select-fct">
             <input type="radio" name="btn-fct"
-                   id="total-fct" value="total" checked>
+                   id="total-fct" value="total" onchange="changeFct()" checked>
             <label for="total-fct">Coût Total</label>
             <input type="radio" name="btn-fct"
-                   id="avg-buy-fct" value="avg-buy">
+                   id="avg-buy-fct" value="avg-buy" onchange="changeFct()">
             <label for="avg-buy-fct">Coût Moyen avec unité d'achat</label>
             <input type="radio" name="btn-fct"
-                   id="avg-use-fct" value="avg-use">
+                   id="avg-use-fct" value="avg-use" onchange="changeFct()">
             <label for="avg-use-fct">Coût Moyen avec unité d'utilisation</label>
             <input type="radio" name="btn-fct"
-                   id="image-fct" value="image">
+                   id="image-fct" value="image" onchange="changeFct()">
             <label for="image-fct">Image des quantités restantes</label>
         </div>
         <br/>
         <div class="container">
-            <span>Date: </span>
+            <label for="date-fct">Date: </label>
             <input type="date" data-date-inline-picker="false" data-date-open-on-focus="true" id="date-fct">
-            <span>Catégorie: </span>
+            <label for="cat-fct" id="cat-label">Catégorie: </label>
             <input type="text" id="cat-fct">
+            <label for="tax-fct" id="tax-label">Taxe: </label>
+            <input type="checkbox" id="tax-fct" checked>
             <button type="button" id="ok-fct">Ok</button>
         </div>
         <br/>
@@ -186,8 +188,8 @@
                 else if (method === "DELETE") {
                     oid = document.getElementById("oid-api").value;
                     $.ajax({
-                        type: method,
-                        url: "/transactions/" + type + "/" + oid
+                        "type": method,
+                        "url": "/transactions/" + type + "/" + oid
                     });
                     $.getJSON("/transactions", function(data) {
                         update_transactions_lists(data);
@@ -201,18 +203,45 @@
                 date = revertDate(document.getElementById("date-fct").value);
                 if(document.getElementById("total-fct").checked) {
                     category = document.getElementById("cat-fct").value;
+                    tax = document.getElementById("tax-fct").value;
+                    $.ajax({
+                        "type": "GET",
+                        "url": "/total_cost/" + date + "/" + category + "/" + tax,
 
+                    }).done(function(data) {
+
+                    });
                 }
                 else if (document.getElementById("avg-buy-fct").checked) {
                     category = document.getElementById("cat-fct").value;
+                    tax = document.getElementById("tax-fct").value;
+                    $.ajax({
+                        "type": "GET",
+                        "url": "/avg_cost_buy/" + date + "/" + category + "/" + tax,
 
+                    }).done(function(data) {
+
+                    });
                 }
                 else if (document.getElementById("avg-use-fct").checked) {
                     category = document.getElementById("cat-fct").value;
+                    tax = document.getElementById("tax-fct").value;
+                    $.ajax({
+                        "type": "GET",
+                        "url": "/avg_cost_use/" + date + "/" + category + "/" + tax,
 
+                    }).done(function(data) {
+
+                    });
                 }
                 else if (document.getElementById("image-fct").checked) {
+                    $.ajax({
+                        "type": "GET",
+                        "url": "/image/" + date,
 
+                    }).done(function(data) {
+
+                    });
                 }
                 else {
                     // Do nothing
@@ -279,6 +308,36 @@
             old_date = new_date.split("-");
             old_date = old_date[2].replace(/^0+(?!\.|$)/, "") + " " + DATE_MONTHS[parseInt(old_date[1])-1] + " " + old_date[0];
             return old_date
+        }
+
+        function changeFct(fct) {
+            if(document.getElementById("total-fct").checked) {
+                document.getElementById("cat-label").hidden = false;
+                document.getElementById("cat-fct").hidden = false;
+                document.getElementById("tax-label").hidden = false;
+                document.getElementById("tax-fct").hidden = false;
+            }
+            else if (document.getElementById("avg-buy-fct").checked) {
+                document.getElementById("cat-label").hidden = false;
+                document.getElementById("cat-fct").hidden = false;
+                document.getElementById("tax-label").hidden = false;
+                document.getElementById("tax-fct").hidden = false;
+            }
+            else if (document.getElementById("avg-use-fct").checked) {
+                document.getElementById("cat-label").hidden = false;
+                document.getElementById("cat-fct").hidden = false;
+                document.getElementById("tax-label").hidden = false;
+                document.getElementById("tax-fct").hidden = false;
+            }
+            else if (document.getElementById("image-fct").checked) {
+                document.getElementById("cat-label").hidden = true;
+                document.getElementById("cat-fct").hidden = true;
+                document.getElementById("tax-label").hidden = true;
+                document.getElementById("tax-fct").hidden =true ;
+            }
+            else {
+                // Do nothing
+            }
         }
     </script>
 </body>

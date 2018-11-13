@@ -296,7 +296,8 @@ def delete_one_transaction(trans_type, trans_id):
 
 
 # Le coût total à une date précise pour une catégorie de matériel.
-def total_cost_given_date_and_category(date, category="Consumable", tax=True):
+@application.route("/total_cost/<date>/<category>/<tax>")
+def total_cost(date, category="Consumable", tax=True):
     if tax:
         tax_field = "$total"
     else:
@@ -330,7 +331,8 @@ def total_cost_given_date_and_category(date, category="Consumable", tax=True):
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
 # à une date précise d'une catégorie de matériel.
-def avg_cost_weighted_by_unit_buy_given_date_and_category(date, category="Consumable", tax=True):
+@application.route("/avg_cost_buy/<date>/<category>/<tax>")
+def avg_cost_buy(date, category="Consumable", tax=True):
     if tax:
         tax_field = "$total"
     else:
@@ -384,8 +386,9 @@ def avg_cost_weighted_by_unit_buy_given_date_and_category(date, category="Consum
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'utilisation,
 # à une date précise d'une catégorie de matériel.
-def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consumable", tax=True):
-    req = avg_cost_weighted_by_unit_buy_given_date_and_category(date, category, tax)
+@application.route("/avg_cost_use/<date>/<category>/<tax>")
+def avg_cost_use(date, category="Consumable", tax=True):
+    req = avg_cost_buy(date, category, tax)
     if not req:
         return jsonify(
             result="Failure",
@@ -400,7 +403,8 @@ def avg_cost_weighted_by_unit_use_given_date_and_category(date, category="Consum
 
 # L'image à une date précise de la quantité restante, en unité d'utilisation,
 # des matières premières.
-def image_of_leftover_quantity_in_unit_of_raw_material_given_date(date):
+@application.route("/image/<date>")
+def image(date):
     # Calculer la quantité de matériaux achetées
     pipeline_buy = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}}},
