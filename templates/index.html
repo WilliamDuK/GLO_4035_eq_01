@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" href="data:;base64,=">
     <meta charset="UTF-8">
     <title>Système d'inventaire</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
     <style type="text/css">
+        .HTTP-Success {
+            color: green;
+        }
+        .HTTP-Failure {
+            color: red;
+        }
+
         .container {
             display: inline-block;
         }
@@ -43,6 +51,7 @@
         <input placeholder="Écrire l'ObjectId ici" id="oid-api" hidden>
         <input placeholder="Remplir les données ici" id="data-api">
         <button type="button" id="ok-api">Ok</button>
+        <div id="http-status"></div>
     </div>
     <hr/>
     <div class="transactions-container">
@@ -95,12 +104,11 @@
         <b>TODO:</b>
         <ul>
             <li>Vérifier que l'erreur 500 du correcteur est corrigé</li>
-
             <li>Vérifier avec l'application Excel pour les normes : catégorie vs item pour "avg cost"</li>
 
             <li>Vérifier que 'tax' soit toujours égale 'total' - 'stotal'</li>
 
-            <li>Écrire le rapport à remettre en fin novembre</li>
+            <li>Écrire le rapport à remettre pour le 27 novembre</li>
 
             <li>Cleaner le code</li>
         </ul>
@@ -140,6 +148,7 @@
                 update_transactions_lists(data);
             });
             $("button#refresh").click(function() {
+                document.getElementById("http-status").innerHTML = "";
                 $.getJSON("/transactions", function(data) {
                     update_transactions_lists(data);
                 });
@@ -155,10 +164,14 @@
                         "dataType": "json",
                         "contentType": "application/json",
                         "data": data
-                    }).done(function() {
+                    }).done(function(ans) {
+                        document.getElementById("http-status").innerHTML = "<span class='HTTP-" + ans.result + "'>" + ans.status + ": " + ans.message + "</span>";
                         $.getJSON("/transactions", function(data) {
                             update_transactions_lists(data);
                         });
+                    }).fail(function(ans) {
+                        ans = ans.responseJSON;
+                        document.getElementById("http-status").innerHTML = "<span class='HTTP-" + ans.result + "'>" + ans.status + ": " + ans.message + "</span>";
                     });
                 }
                 else if (method === "PUT") {
@@ -170,10 +183,14 @@
                         "dataType": "json",
                         "contentType": "application/json",
                         "data": data
-                    }).done(function() {
+                    }).done(function(ans) {
+                        document.getElementById("http-status").innerHTML = "<span class='HTTP-" + ans.result + "'>" + ans.status + ": " + ans.message + "</span>";
                         $.getJSON("/transactions", function(data) {
                             update_transactions_lists(data);
                         });
+                    }).fail(function(ans) {
+                        ans = ans.responseJSON;
+                        document.getElementById("http-status").innerHTML = "<span class='HTTP-" + ans.result + "'>" + ans.status + ": " + ans.message + "</span>";
                     });
                 }
                 else if (method === "DELETE") {
@@ -181,10 +198,14 @@
                     $.ajax({
                         "type": method,
                         "url": "/transactions/" + type + "/" + oid
-                    }).done(function() {
+                    }).done(function(ans) {
+                        document.getElementById("http-status").innerHTML = "<span class='HTTP-" + ans.result + "'>" + ans.status + ": " + ans.message + "</span>";
                         $.getJSON("/transactions", function(data) {
                             update_transactions_lists(data);
                         });
+                    }).fail(function(ans) {
+                        ans = ans.responseJSON;
+                        document.getElementById("http-status").innerHTML = "<span class='HTTP-" + ans.result + "'>" + ans.status + ": " + ans.message + "</span>";
                     });
                 }
             });
@@ -299,6 +320,7 @@
         }
 
         function changeAPI(method) {
+            document.getElementById("http-status").innerHTML = "";
             document.getElementById("oid-api").value = "";
             document.getElementById("data-api").value = "";
             if (method === "POST") {
@@ -318,6 +340,7 @@
         }
 
         function changeType(type) {
+            document.getElementById("http-status").innerHTML = "";
             method = document.getElementById("select-api").value;
             if (method === "POST") {
                 if (type === "purchases") {

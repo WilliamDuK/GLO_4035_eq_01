@@ -42,7 +42,14 @@ def index():
 @application.route("/transactions", methods=["POST"])
 def add_transactions():
     if request.headers['Content-Type'] == "application/json":
-        data = request.get_json()
+        try:
+            data = request.get_json()
+        except Exception:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="The JSON is incorrectly formatted"
+            ), 400
         if isinstance(data, dict):
             data = [data]
         for item in data:  # Vérification du type des données
@@ -137,9 +144,9 @@ def get_one_transaction(trans_type, trans_id):
         else:
             return jsonify(
                 result="Failure",
-                status="405",
+                status="400",
                 message="There is no sub-collection named " + trans_type
-            ), 405
+            ), 400
         if ans:
             return dumps(ans)
         else:
@@ -151,9 +158,9 @@ def get_one_transaction(trans_type, trans_id):
     else:
         return jsonify(
             result="Failure",
-            status="405",
+            status="400",
             message="The ObjectId sent is not valid"
-        ), 405
+        ), 400
 
 
 # Route d'API pouvant modifier la transaction avec l'ID donnée de votre base de données.
@@ -162,7 +169,14 @@ def get_one_transaction(trans_type, trans_id):
 def put_one_transaction(trans_type, trans_id):
     if request.headers['Content-Type'] == "application/json":
         if validations.validate_objectid(trans_id):
-            data = request.get_json()
+            try:
+                data = request.get_json()
+            except Exception:
+                return jsonify(
+                    result="Failure",
+                    status="400",
+                    message="The JSON is incorrectly formatted"
+                ), 400
             ans = {}
             if trans_type == "purchases":
                 ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
@@ -179,9 +193,9 @@ def put_one_transaction(trans_type, trans_id):
                     else:
                         return jsonify(
                             result="Failure",
-                            status="405",
+                            status="400",
                             message="The modifications applied on the transaction is invalid"
-                        ), 405
+                        ), 400
                 else:
                     return jsonify(
                         result="Failure",
@@ -203,9 +217,9 @@ def put_one_transaction(trans_type, trans_id):
                     else:
                         return jsonify(
                             result="Failure",
-                            status="405",
+                            status="400",
                             message="The modifications applied on the transaction is invalid"
-                        ), 405
+                        ), 400
                 else:
                     return jsonify(
                         result="Failure",
@@ -227,9 +241,9 @@ def put_one_transaction(trans_type, trans_id):
                     else:
                         return jsonify(
                             result="Failure",
-                            status="405",
+                            status="400",
                             message="The modifications applied on the transaction is invalid"
-                        ), 405
+                        ), 400
                 else:
                     return jsonify(
                         result="Failure",
@@ -239,15 +253,15 @@ def put_one_transaction(trans_type, trans_id):
             else:
                 return jsonify(
                     result="Failure",
-                    status="405",
+                    status="400",
                     message="There is no sub-collection named " + trans_type
-                ), 405
+                ), 400
         else:
             return jsonify(
                 result="Failure",
-                status="405",
+                status="400",
                 message="The ObjectId sent is not valid"
-            ), 405
+            ), 400
     return jsonify(
         result="Failure",
         status="405",
@@ -269,9 +283,9 @@ def delete_one_transaction(trans_type, trans_id):
         else:
             return jsonify(
                 result="Failure",
-                status="405",
+                status="400",
                 message="There is no sub-collection named " + trans_type
-            ), 405
+            ), 400
         if ans:
             return jsonify(
                 result="Success",
@@ -287,9 +301,9 @@ def delete_one_transaction(trans_type, trans_id):
     else:
         return jsonify(
             result="Failure",
-            status="405",
+            status="400",
             message="The ObjectId sent is not valid"
-        ), 405
+        ), 400
 
 
 # ---------- Fonctions ----------
@@ -312,10 +326,10 @@ def total_cost(date, category="Consumable", tax=True):
     req = list(transactions.purchases.aggregate(pipeline))
     if not req:
         return jsonify(
-            result="Failure",
-            status="400",
+            result="Success",
+            status="204",
             message="There are no transactions with the given date and category"
-        ), 400
+        ), 204
     else:
         ans = {}
         # Détection de la catégorie
@@ -349,10 +363,10 @@ def avg_cost_buy(date, category="Consumable", tax=True):
     req = list(transactions.purchases.aggregate(pipeline))
     if not req:
         return jsonify(
-            result="Failure",
-            status="400",
+            result="Success",
+            status="204",
             message="There are no transactions with the given date and category"
-        ), 400
+        ), 204
     else:
         # Vérification qu'on a pas deux fois le même 'item', sinon sommation
         ans = []
@@ -392,10 +406,10 @@ def avg_cost_use(date, category="Consumable", tax=True):
     req = loads(avg_cost_buy(date, category, tax))
     if not req:
         return jsonify(
-            result="Failure",
-            status="400",
+            result="Success",
+            status="204",
             message="There are no transactions with the given date and category"
-        ), 400
+        ), 204
     else:
         # Convertir en unité d'utilisation
         ans = convert_unit_to_use_avg(req)
@@ -424,10 +438,10 @@ def image(date):
 
     if not req_buy and not req_use:
         return jsonify(
-            result="Failure",
-            status="400",
+            result="Success",
+            status="204",
             message="There are no transactions with the given date or before it"
-        ), 400
+        ), 204
     else:
         # Calculer la quantité de matériaux restants après utilisation
         ans = []
@@ -570,10 +584,10 @@ def get_item_density(item):
             ans = transactions.densities.find_one({"item": "Consumable - Base Oil"})
         else:
             return jsonify(
-                result="Failure",
-                status="400",
+                result="Success",
+                status="204",
                 message="There are no density for this item"
-            ), 400
+            ), 204
     else:
         ans = transactions.densities.find_one({"item": item})
     density = ans["g"] / ans["ml"]
