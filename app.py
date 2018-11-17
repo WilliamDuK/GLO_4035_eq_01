@@ -42,7 +42,14 @@ def index():
 @application.route("/transactions", methods=["POST"])
 def add_transactions():
     if request.headers['Content-Type'] == "application/json":
-        data = request.get_json()
+        try:
+            data = request.get_json()
+        except Exception:
+            return jsonify(
+                result="Failure",
+                status="400",
+                message="The JSON is incorrectly formatted"
+            ), 400
         if isinstance(data, dict):
             data = [data]
         for item in data:  # Vérification du type des données
@@ -162,7 +169,14 @@ def get_one_transaction(trans_type, trans_id):
 def put_one_transaction(trans_type, trans_id):
     if request.headers['Content-Type'] == "application/json":
         if validations.validate_objectid(trans_id):
-            data = request.get_json()
+            try:
+                data = request.get_json()
+            except Exception:
+                return jsonify(
+                    result="Failure",
+                    status="400",
+                    message="The JSON is incorrectly formatted"
+                ), 400
             ans = {}
             if trans_type == "purchases":
                 ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
