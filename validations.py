@@ -6,7 +6,7 @@ from bson.objectid import ObjectId, InvalidId
 
 
 MD5_HASHED_PASSWORD = "d6b0ab7f1c8ab8f514db9a6d85de160a"
-TRANSACTION_SCHEMA = {
+ANY_SCHEMA = {
     "properties": {
         "date": {
             "type": "string"
@@ -15,22 +15,22 @@ TRANSACTION_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "unit": {
             "type": "string"
         },
         "total": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "stotal": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "tax": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "job_id": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "type": {
             "type": "string"
@@ -42,10 +42,10 @@ TRANSACTION_SCHEMA = {
             "type": "string"
         },
         "g": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "ml": {
-            "type": ["string", "number"]
+            "type": "number"
         }
     },
     "required": ["item"],
@@ -60,19 +60,19 @@ PURCHASE_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "unit": {
             "type": "string"
         },
         "total": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "stotal": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "tax": {
-            "type": ["string", "number"]
+            "type": "number"
         }
     },
     "required": ["date", "item", "qte", "unit", "total", "stotal", "tax"],
@@ -87,13 +87,13 @@ TRANSFORMATION_SCHEMA = {
             "type": "string"
         },
         "qte": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "unit": {
             "type": "string"
         },
         "job_id": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "type": {
             "type": "string"
@@ -114,10 +114,127 @@ DENSITY_SCHEMA = {
             "type": "string"
         },
         "g": {
-            "type": ["string", "number"]
+            "type": "number"
         },
         "ml": {
-            "type": ["string", "number"]
+            "type": "number"
+        }
+    },
+    "required": ["item", "g", "ml"],
+    "additionalProperties": False
+}
+ANY_SCHEMA_CSV = {
+    "properties": {
+        "date": {
+            "type": "string"
+        },
+        "item": {
+            "type": "string"
+        },
+        "qte": {
+            "type": "string"
+        },
+        "unit": {
+            "type": "string"
+        },
+        "total": {
+            "type": "string"
+        },
+        "stotal": {
+            "type": "string"
+        },
+        "tax": {
+            "type": "string"
+        },
+        "job_id": {
+            "type": "string"
+        },
+        "type": {
+            "type": "string"
+        },
+        "Information": {
+            "type": "string"
+        },
+        "information": {
+            "type": "string"
+        },
+        "g": {
+            "type": "string"
+        },
+        "ml": {
+            "type": "string"
+        }
+    },
+    "required": ["item"],
+    "additionalProperties": False
+}
+PURCHASE_SCHEMA_CSV = {
+    "properties": {
+        "date": {
+            "type": "string"
+        },
+        "item": {
+            "type": "string"
+        },
+        "qte": {
+            "type": "string"
+        },
+        "unit": {
+            "type": "string"
+        },
+        "total": {
+            "type": "string"
+        },
+        "stotal": {
+            "type": "string"
+        },
+        "tax": {
+            "type": "string"
+        }
+    },
+    "required": ["date", "item", "qte", "unit", "total", "stotal", "tax"],
+    "additionalProperties": False
+}
+TRANSFORMATION_SCHEMA_CSV = {
+    "properties": {
+        "date": {
+            "type": "string"
+        },
+        "item": {
+            "type": "string"
+        },
+        "qte": {
+            "type": "string"
+        },
+        "unit": {
+            "type": "string"
+        },
+        "job_id": {
+            "type": "string"
+        },
+        "type": {
+            "type": "string"
+        }
+    },
+    "required": ["date", "item", "qte", "unit", "job_id", "type"],
+    "additionalProperties": False
+}
+DENSITY_SCHEMA_CSV = {
+    "properties": {
+        "Information": {
+            "type": "string"
+        },
+        "information": {
+            "type": "string"
+        },
+        "item": {
+            "type": "string"
+        },
+        "g": {
+            "type": "string"
+        },
+        "ml": {
+            "type": "string"
         }
     },
     "required": ["item", "g", "ml"],
@@ -142,9 +259,9 @@ def verify_passwd(password):
 
 
 # Vérifie si l'objet reçu en paramètre est Transaction
-def validate_transaction(item):
+def validate_any(item):
     try:
-        validate(item, TRANSACTION_SCHEMA)
+        validate(item, ANY_SCHEMA)
     except ValidationError:
         return False
     else:
@@ -181,10 +298,66 @@ def validate_density(item):
         return True
 
 
+# Vérifie si l'objet reçu en paramètre est Transaction
+def validate_any_csv(item):
+    try:
+        validate(item, ANY_SCHEMA_CSV)
+    except ValidationError:
+        return False
+    else:
+        return True
+
+
+# Vérifie si l'objet reçu en paramètre est Purchase
+def validate_purchase_csv(item):
+    try:
+        validate(item, PURCHASE_SCHEMA_CSV)
+    except ValidationError:
+        return False
+    else:
+        return True
+
+
+# Vérifie si l'objet reçu en paramètre est Transform
+def validate_transformation_csv(item):
+    try:
+        validate(item, TRANSFORMATION_SCHEMA_CSV)
+    except ValidationError:
+        return False
+    else:
+        return True
+
+
+# Vérifie si l'objet reçu en paramètre est Density
+def validate_density_csv(item):
+    try:
+        validate(item, DENSITY_SCHEMA_CSV)
+    except ValidationError:
+        return False
+    else:
+        return True
+
+
 # Vérifie si l'ObjectId est valide
 def validate_objectid(oid):
     try:
         ObjectId(oid)
         return True
     except (InvalidId, TypeError):
+        return False
+
+
+# Vérifie si 'total' => 'stotal'
+def validate_subtotal(data):
+    if data["total"] >= data["stotal"]:
+        return True
+    else:
+        return False
+
+
+# Vérifie si 'tax' = 'total' - 'stotal'
+def validate_tax(data):
+    if data["tax"] == data["total"] - data["stotal"]:
+        return True
+    else:
         return False
