@@ -24,8 +24,8 @@ def revert_date(new_date):
 
 # Vérifie que le format de la date est valide
 def validate_new_date(new_date):
-    year, month, day = new_date.split("-")
     try:
+        year, month, day = new_date.split("-")
         date(int(year), int(month), int(day))
         return True
     except ValueError:
@@ -34,14 +34,17 @@ def validate_new_date(new_date):
 
 # Vérifie que le format de la date est valide
 def validate_old_date(old_date):
-    day, month, year = old_date.split(" ")
-    if validate_month(month):
-        new_date = convert_date(old_date)
-        if validate_new_date(new_date):
-            return True
+    try:
+        day, month, year = old_date.split(" ")
+        if validate_month(month):
+            new_date = convert_date(old_date)
+            if validate_new_date(new_date):
+                return True
+            else:
+                return False
         else:
             return False
-    else:
+    except ValueError:
         return False
 
 
