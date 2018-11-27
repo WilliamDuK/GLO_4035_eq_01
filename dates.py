@@ -24,7 +24,7 @@ def revert_date(new_date):
 
 # Vérifie que le format de la date est valide
 def validate_new_date(new_date):
-    day, month, year = new_date.split("-")
+    year, month, day = new_date.split("-")
     try:
         date(int(year), int(month), int(day))
         return True

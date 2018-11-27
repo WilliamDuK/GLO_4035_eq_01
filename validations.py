@@ -357,7 +357,9 @@ def validate_subtotal(data):
 
 # Vérifie si 'tax' = 'total' - 'stotal'
 def validate_tax(data):
-    if data["tax"] == data["total"] - data["stotal"]:
+    tax_temp = data["total"] - data["stotal"]
+    if data["tax"] - 0.01 <= round(tax_temp, 2) <= data["tax"] + 0.01 \
+            or data["tax"] - 0.01 <= tax_temp <= data["tax"] + 0.01:
         return True
     else:
         return False

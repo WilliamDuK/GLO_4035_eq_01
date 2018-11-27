@@ -656,8 +656,8 @@ def validate_transformations_numbers(item):
 # Valider si tous les nombres de Densities sont valides
 def validate_densities_numbers(item):
     try:
-        x = int(item["g"])
-        y = int(item["ml"])
+        x = float(item["g"])
+        y = float(item["ml"])
         return True
     except ValueError:
         return False
