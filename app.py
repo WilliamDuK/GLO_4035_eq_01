@@ -226,7 +226,7 @@ def get_one_transaction(trans_type, trans_id):
         return jsonify(
             result="Failure",
             status="400",
-            message="The ObjectId sent is not valid"
+            message="The ObjectId sent is invalid"
         ), 400
 
 
@@ -270,7 +270,7 @@ def put_one_transaction(trans_type, trans_id):
                         return jsonify(
                             result="Failure",
                             status="400",
-                            message="The JSON is incorrectly formatted"
+                            message="The modifications applied on the transaction are invalid"
                         ), 400
                 else:
                     return jsonify(
@@ -296,7 +296,7 @@ def put_one_transaction(trans_type, trans_id):
                         return jsonify(
                             result="Failure",
                             status="400",
-                            message="The modifications applied on the transaction is invalid"
+                            message="The modifications applied on the transaction are invalid"
                         ), 400
                 else:
                     return jsonify(
@@ -315,7 +315,7 @@ def put_one_transaction(trans_type, trans_id):
                         return jsonify(
                             result="Failure",
                             status="400",
-                            message="The modifications applied on the transaction is invalid"
+                            message="The modifications applied on the transaction are invalid"
                         ), 400
                 else:
                     return jsonify(
@@ -333,7 +333,7 @@ def put_one_transaction(trans_type, trans_id):
             return jsonify(
                 result="Failure",
                 status="400",
-                message="The ObjectId sent is not valid"
+                message="The ObjectId sent is invalid"
             ), 400
         return jsonify(
             result="Success",
@@ -380,7 +380,7 @@ def delete_one_transaction(trans_type, trans_id):
         return jsonify(
             result="Failure",
             status="400",
-            message="The ObjectId sent is not valid"
+            message="The ObjectId sent is invalid"
         ), 400
 
 
