@@ -157,7 +157,7 @@ def add_transactions():
             result="Success",
             status="200",
             message="The JSON is correctly formatted"
-        )
+        ), 200
     return jsonify(
         result="Failure",
         status="405",
@@ -190,12 +190,6 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    # list1 = get_purchases_units()
-    # list2 = get_transformations_units()
-    # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    # test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
-    # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
-    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 April 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
         "transformations": loads(create_list_transformations()),
@@ -257,17 +251,26 @@ def put_one_transaction(trans_type, trans_id):
                     del ans["_id"]
                     ans.update(data)
                     if validations.validate_purchase(ans):
-                        transactions.purchases.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
-                        return jsonify(
-                            result="Success",
-                            status="200",
-                            message="The transaction with that ID was successfully modified"
-                        ), 200
+                        if dates.validate_new_date(ans["date"]):
+                            if validations.validate_subtotal(ans) and validations.validate_tax(ans):
+                                transactions.purchases.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                            else:
+                                return jsonify(
+                                    result="Failure",
+                                    status="400",
+                                    message="The price is incorrectly formatted"
+                                ), 400
+                        else:
+                            return jsonify(
+                                result="Failure",
+                                status="400",
+                                message="The date is incorrectly formatted"
+                            ), 400
                     else:
                         return jsonify(
                             result="Failure",
                             status="400",
-                            message="The modifications applied on the transaction is invalid"
+                            message="The JSON is incorrectly formatted"
                         ), 400
                 else:
                     return jsonify(
@@ -281,12 +284,14 @@ def put_one_transaction(trans_type, trans_id):
                     del ans["_id"]
                     ans.update(data)
                     if validations.validate_transformation(ans):
-                        transactions.transformations.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
-                        return jsonify(
-                            result="Success",
-                            status="200",
-                            message="The transaction with that ID was successfully modified"
-                        ), 200
+                        if dates.validate_new_date(ans["date"]):
+                            transactions.transformations.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                        else:
+                            return jsonify(
+                                result="Failure",
+                                status="400",
+                                message="The date is incorrectly formatted"
+                            ), 400
                     else:
                         return jsonify(
                             result="Failure",
@@ -306,11 +311,6 @@ def put_one_transaction(trans_type, trans_id):
                     ans.update(data)
                     if validations.validate_density(ans):
                         transactions.densities.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
-                        return jsonify(
-                            result="Success",
-                            status="200",
-                            message="The transaction with that ID was successfully modified"
-                        ), 200
                     else:
                         return jsonify(
                             result="Failure",
@@ -335,6 +335,11 @@ def put_one_transaction(trans_type, trans_id):
                 status="400",
                 message="The ObjectId sent is not valid"
             ), 400
+        return jsonify(
+            result="Success",
+            status="200",
+            message="The transaction with that ID was successfully modified"
+        ), 200
     return jsonify(
         result="Failure",
         status="405",
