@@ -53,20 +53,93 @@ def add_transactions():
         if isinstance(data, dict):
             data = [data]
         for item in data:  # Vérification du type des données
-            # C'est les validations qui ne fonctionnent pas.
-            # Sans celle-ci, les insertions fonctionnent
-            # C'était parce que les nombres étaient aussi des strings
-            if validations.validate_transaction(item):
-                if not validations.validate_density(item):
-                    item["date"] = dates.convert_date(item["date"])
+            if validations.validate_any_csv(item):
+                if validations.validate_purchase_csv(item):
+                    if dates.validate_old_date(item["date"]):
+                        item["date"] = dates.convert_date(item["date"])
+                        if validate_purchases_numbers(item):
+                            item = convert_purchases_numbers(item)
+                            if validations.validate_subtotal(item) and validations.validate_tax(item):
+                                transactions.purchases.insert_one(item)
+                            else:
+                                return jsonify(
+                                    result="Failure",
+                                    status="400",
+                                    message="The price is incorrectly formatted"
+                                ), 400
+                        else:
+                            return jsonify(
+                                result="Failure",
+                                status="400",
+                                message="The numbers are incorrectly formatted"
+                            ), 400
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="400",
+                            message="The date is incorrectly formatted"
+                        ), 400
+                elif validations.validate_transformation_csv(item):
+                    if dates.validate_old_date(item["date"]):
+                        item["date"] = dates.convert_date(item["date"])
+                        if validate_transformations_numbers(item):
+                            item = convert_transformations_numbers(item)
+                            transactions.transformations.insert_one(item)
+                        else:
+                            return jsonify(
+                                result="Failure",
+                                status="400",
+                                message="The numbers are incorrectly formatted"
+                            ), 400
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="400",
+                            message="The date is incorrectly formatted"
+                        ), 400
+                elif validations.validate_density_csv(item):
+                    if validate_densities_numbers(item):
+                        item = convert_densities_numbers(item)
+                        transactions.densities.insert_one(item)
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="400",
+                            message="The numbers are incorrectly formatted"
+                        ), 400
+                else:
+                    return jsonify(
+                        result="Failure",
+                        status="400",
+                        message="The JSON is incorrectly formatted"
+                    ), 400
+            elif validations.validate_any(item):
                 if validations.validate_purchase(item):
-                    item = convert_purchases_numbers(item)
-                    transactions.purchases.insert_one(item)
+                    if dates.validate_new_date(item["date"]):
+                        if validations.validate_subtotal(item) and validations.validate_tax(item):
+                            transactions.purchases.insert_one(item)
+                        else:
+                            return jsonify(
+                                result="Failure",
+                                status="400",
+                                message="The price is incorrectly formatted"
+                            ), 400
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="400",
+                            message="The date is incorrectly formatted"
+                        ), 400
                 elif validations.validate_transformation(item):
-                    item = convert_transformations_numbers(item)
-                    transactions.transformations.insert_one(item)
+                    if dates.validate_new_date(item["date"]):
+                        transactions.transformations.insert_one(item)
+                    else:
+                        return jsonify(
+                            result="Failure",
+                            status="400",
+                            message="The date is incorrectly formatted"
+                        ), 400
                 elif validations.validate_density(item):
-                    item = convert_densities_numbers(item)
                     transactions.densities.insert_one(item)
                 else:
                     return jsonify(
@@ -84,7 +157,7 @@ def add_transactions():
             result="Success",
             status="200",
             message="The JSON is correctly formatted"
-        )
+        ), 200
     return jsonify(
         result="Failure",
         status="405",
@@ -117,12 +190,6 @@ def drop_all_collections():
 # Route d'API pouvant aller extraire toutes les transactions de votre base de données.
 @application.route("/transactions", methods=["GET"])
 def get_all_transactions():
-    # list1 = get_purchases_units()
-    # list2 = get_transformations_units()
-    # test1 = total_cost_given_date_and_category("5 January 2018", "Base Oil")
-    # test2 = avg_cost_weighted_by_unit_buy_given_date_and_category("5 January 2018", "Base Oil")
-    # test3 = avg_cost_weighted_by_unit_use_given_date_and_category("5 January 2018", "Base Oil")
-    # test4 = image_of_leftover_quantity_in_unit_of_raw_material_given_date("5 April 2018")
     return dumps({
         "purchases": loads(create_list_purchases()),
         "transformations": loads(create_list_transformations()),
@@ -159,7 +226,7 @@ def get_one_transaction(trans_type, trans_id):
         return jsonify(
             result="Failure",
             status="400",
-            message="The ObjectId sent is not valid"
+            message="The ObjectId sent is invalid"
         ), 400
 
 
@@ -184,17 +251,26 @@ def put_one_transaction(trans_type, trans_id):
                     del ans["_id"]
                     ans.update(data)
                     if validations.validate_purchase(ans):
-                        transactions.purchases.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
-                        return jsonify(
-                            result="Success",
-                            status="200",
-                            message="The transaction with that ID was successfully modified"
-                        ), 200
+                        if dates.validate_new_date(ans["date"]):
+                            if validations.validate_subtotal(ans) and validations.validate_tax(ans):
+                                transactions.purchases.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                            else:
+                                return jsonify(
+                                    result="Failure",
+                                    status="400",
+                                    message="The price is incorrectly formatted"
+                                ), 400
+                        else:
+                            return jsonify(
+                                result="Failure",
+                                status="400",
+                                message="The date is incorrectly formatted"
+                            ), 400
                     else:
                         return jsonify(
                             result="Failure",
                             status="400",
-                            message="The modifications applied on the transaction is invalid"
+                            message="The modifications applied on the transaction are invalid"
                         ), 400
                 else:
                     return jsonify(
@@ -208,17 +284,19 @@ def put_one_transaction(trans_type, trans_id):
                     del ans["_id"]
                     ans.update(data)
                     if validations.validate_transformation(ans):
-                        transactions.transformations.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
-                        return jsonify(
-                            result="Success",
-                            status="200",
-                            message="The transaction with that ID was successfully modified"
-                        ), 200
+                        if dates.validate_new_date(ans["date"]):
+                            transactions.transformations.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+                        else:
+                            return jsonify(
+                                result="Failure",
+                                status="400",
+                                message="The date is incorrectly formatted"
+                            ), 400
                     else:
                         return jsonify(
                             result="Failure",
                             status="400",
-                            message="The modifications applied on the transaction is invalid"
+                            message="The modifications applied on the transaction are invalid"
                         ), 400
                 else:
                     return jsonify(
@@ -233,16 +311,11 @@ def put_one_transaction(trans_type, trans_id):
                     ans.update(data)
                     if validations.validate_density(ans):
                         transactions.densities.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
-                        return jsonify(
-                            result="Success",
-                            status="200",
-                            message="The transaction with that ID was successfully modified"
-                        ), 200
                     else:
                         return jsonify(
                             result="Failure",
                             status="400",
-                            message="The modifications applied on the transaction is invalid"
+                            message="The modifications applied on the transaction are invalid"
                         ), 400
                 else:
                     return jsonify(
@@ -260,8 +333,13 @@ def put_one_transaction(trans_type, trans_id):
             return jsonify(
                 result="Failure",
                 status="400",
-                message="The ObjectId sent is not valid"
+                message="The ObjectId sent is invalid"
             ), 400
+        return jsonify(
+            result="Success",
+            status="200",
+            message="The transaction with that ID was successfully modified"
+        ), 200
     return jsonify(
         result="Failure",
         status="405",
@@ -302,7 +380,7 @@ def delete_one_transaction(trans_type, trans_id):
         return jsonify(
             result="Failure",
             status="400",
-            message="The ObjectId sent is not valid"
+            message="The ObjectId sent is invalid"
         ), 400
 
 
@@ -556,6 +634,38 @@ def convert_densities_numbers(item):
     item["g"] = float(item["g"])
     item["ml"] = float(item["ml"])
     return item
+
+
+# Valider si tous les nombres de Purchases sont valides
+def validate_purchases_numbers(item):
+    try:
+        w = int(item["qte"])
+        x = float(item["total"])
+        y = float(item["stotal"])
+        z = float(item["tax"])
+        return True
+    except ValueError:
+        return False
+
+
+# Valider si tous les nombres de Transformations sont valides
+def validate_transformations_numbers(item):
+    try:
+        x = int(item["qte"])
+        y = int(item["job_id"])
+        return True
+    except ValueError:
+        return False
+
+
+# Valider si tous les nombres de Densities sont valides
+def validate_densities_numbers(item):
+    try:
+        x = float(item["g"])
+        y = float(item["ml"])
+        return True
+    except ValueError:
+        return False
 
 
 # Retourne une liste contenant tous les items
