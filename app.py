@@ -9,6 +9,13 @@ import validations
 import dates
 import commons
 
+WRONG_CONTENT_WAS_SENT = "The wrong type of content was sent"
+JSON_CORRECTLY_FORMATTED = "The JSON is correctly formatted"
+DATE_INCORRECTLY_FORMATTED = "The date is incorrectly formatted"
+NUMBER_INCRORRECTLY_FORMATTED = "The numbers are incorrectly formatted"
+PRICE_INCORRECTLY_FORMATTED = "The price is incorrectly formatted"
+JSON_INCORRECTLY_FORMATTED = "The JSON is incorrectly formatted"
+FAILURE = "Failure"
 
 DB_NAME = "glo4035_inventory"
 DB_HOST = "ds045679.mlab.com"
@@ -21,7 +28,7 @@ application = Flask("my_glo4035_application")
 application.config["JSON_SORT_KEYS"] = False
 application.config["MONGO_URI"] = "mongodb://" + DB_USER + ":" + DB_PASS + "@" + DB_HOST + ":" + str(DB_PORT) + "/" + DB_NAME
 mongo = PyMongo(application)
-transactions = mongo.db.transactions
+transactions_collection = mongo.db.transactions
 # purchases = mongo.db.transactions.purchases
 # transformations = mongo.db.transactions.transformations
 # densities = mongo.db.transactions.densities
@@ -41,14 +48,15 @@ def index():
 # - Code HTTP 400: JSON mal formaté.
 @application.route("/transactions", methods=["POST"])
 def add_transactions():
+    # Cette fonction la est vraiment trop longue! Beaucoup de logique de if else. elle semble faire plus d'une chose a plusieurs niveaux d'abstraction!!!
     if request.headers['Content-Type'] == "application/json":
         try:
             data = request.get_json()
         except Exception:
             return jsonify(
-                result="Failure",
+                result=FAILURE,
                 status="400",
-                message="The JSON is incorrectly formatted"
+                message=JSON_INCORRECTLY_FORMATTED
             ), 400
         if isinstance(data, dict):
             data = [data]
@@ -60,108 +68,108 @@ def add_transactions():
                         if validate_purchases_numbers(item):
                             item = convert_purchases_numbers(item)
                             if validations.validate_subtotal(item) and validations.validate_tax(item):
-                                transactions.purchases.insert_one(item)
+                                transactions_collection.purchases.insert_one(item)
                             else:
                                 return jsonify(
-                                    result="Failure",
+                                    result=FAILURE,
                                     status="400",
-                                    message="The price is incorrectly formatted"
+                                    message=PRICE_INCORRECTLY_FORMATTED
                                 ), 400
                         else:
                             return jsonify(
-                                result="Failure",
+                                result=FAILURE,
                                 status="400",
-                                message="The numbers are incorrectly formatted"
+                                message=NUMBER_INCRORRECTLY_FORMATTED
                             ), 400
                     else:
                         return jsonify(
-                            result="Failure",
+                            result=FAILURE,
                             status="400",
-                            message="The date is incorrectly formatted"
+                            message=DATE_INCORRECTLY_FORMATTED
                         ), 400
                 elif validations.validate_transformation_csv(item):
                     if dates.validate_old_date(item["date"]):
                         item["date"] = dates.convert_date(item["date"])
                         if validate_transformations_numbers(item):
                             item = convert_transformations_numbers(item)
-                            transactions.transformations.insert_one(item)
+                            transactions_collection.transformations.insert_one(item)
                         else:
                             return jsonify(
-                                result="Failure",
+                                result=FAILURE,
                                 status="400",
-                                message="The numbers are incorrectly formatted"
+                                message=NUMBER_INCRORRECTLY_FORMATTED
                             ), 400
                     else:
                         return jsonify(
-                            result="Failure",
+                            result=FAILURE,
                             status="400",
-                            message="The date is incorrectly formatted"
+                            message=DATE_INCORRECTLY_FORMATTED
                         ), 400
                 elif validations.validate_density_csv(item):
                     if validate_densities_numbers(item):
                         item = convert_densities_numbers(item)
-                        transactions.densities.insert_one(item)
+                        transactions_collection.densities.insert_one(item)
                     else:
                         return jsonify(
-                            result="Failure",
+                            result=FAILURE,
                             status="400",
-                            message="The numbers are incorrectly formatted"
+                            message=NUMBER_INCRORRECTLY_FORMATTED
                         ), 400
                 else:
                     return jsonify(
-                        result="Failure",
+                        result=FAILURE,
                         status="400",
-                        message="The JSON is incorrectly formatted"
+                        message=JSON_INCORRECTLY_FORMATTED
                     ), 400
             elif validations.validate_any(item):
                 if validations.validate_purchase(item):
                     if dates.validate_new_date(item["date"]):
                         if validations.validate_subtotal(item) and validations.validate_tax(item):
-                            transactions.purchases.insert_one(item)
+                            transactions_collection.purchases.insert_one(item)
                         else:
                             return jsonify(
-                                result="Failure",
+                                result=FAILURE,
                                 status="400",
-                                message="The price is incorrectly formatted"
+                                message=PRICE_INCORRECTLY_FORMATTED
                             ), 400
                     else:
                         return jsonify(
-                            result="Failure",
+                            result=FAILURE,
                             status="400",
-                            message="The date is incorrectly formatted"
+                            message=DATE_INCORRECTLY_FORMATTED
                         ), 400
                 elif validations.validate_transformation(item):
                     if dates.validate_new_date(item["date"]):
-                        transactions.transformations.insert_one(item)
+                        transactions_collection.transformations.insert_one(item)
                     else:
                         return jsonify(
-                            result="Failure",
+                            result=FAILURE,
                             status="400",
-                            message="The date is incorrectly formatted"
+                            message=DATE_INCORRECTLY_FORMATTED
                         ), 400
                 elif validations.validate_density(item):
-                    transactions.densities.insert_one(item)
+                    transactions_collection.densities.insert_one(item)
                 else:
                     return jsonify(
-                        result="Failure",
+                        result=FAILURE,
                         status="400",
-                        message="The JSON is incorrectly formatted"
+                        message=JSON_INCORRECTLY_FORMATTED
                     ), 400
             else:
                 return jsonify(
-                    result="Failure",
+                    result=FAILURE,
                     status="400",
-                    message="The JSON is incorrectly formatted"
+                    message=JSON_INCORRECTLY_FORMATTED
                 ), 400
         return jsonify(
             result="Success",
             status="200",
-            message="The JSON is correctly formatted"
+            message=JSON_CORRECTLY_FORMATTED
         ), 200
     return jsonify(
-        result="Failure",
+        result=FAILURE,
         status="405",
-        message="The wrong type of content was sent"
+        message=WRONG_CONTENT_WAS_SENT
     ), 405
 
 
@@ -176,9 +184,9 @@ def drop_all_collections():
         res = validations.verify_passwd(passwd)
         if res[0].json["result"] == "Success":
             # Doit dropper toutes les collections
-            transactions.purchases.drop()
-            transactions.transformations.drop()
-            transactions.densities.drop()
+            transactions_collection.purchases.drop()
+            transactions_collection.transformations.drop()
+            transactions_collection.densities.drop()
         return res
     return jsonify(
         result="Failure",
@@ -203,11 +211,11 @@ def get_one_transaction(trans_type, trans_id):
     if validations.validate_objectid(trans_id):
         ans = {}
         if trans_type == "purchases":
-            ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
+            ans = transactions_collection.purchases.find_one({"_id": ObjectId(trans_id)})
         elif trans_type == "transformations":
-            ans = transactions.transformations.find_one({"_id": ObjectId(trans_id)})
+            ans = transactions_collection.transformations.find_one({"_id": ObjectId(trans_id)})
         elif trans_type == "densities":
-            ans = transactions.densities.find_one({"_id": ObjectId(trans_id)})
+            ans = transactions_collection.densities.find_one({"_id": ObjectId(trans_id)})
         else:
             return jsonify(
                 result="Failure",
@@ -232,10 +240,11 @@ def get_one_transaction(trans_type, trans_id):
 
 # Route d'API pouvant modifier la transaction avec l'ID donnée de votre base de données.
 # Les opérateurs pour modifier seront donnés avant la requête HTML.
-@application.route("/transactions/<trans_type>/<trans_id>", methods=["PUT"])
-def put_one_transaction(trans_type, trans_id):
+@application.route("/transactions/<transaction_type>/<transaction_id>", methods=["PUT"])
+def put_one_transaction(transaction_type, transaction_id):
+    # Cette fonction la est vraiment trop longue! Beaucoup de logique de if else. elle semble faire plus d'une chose a plusieurs niveaux d'abstraction!!!
     if request.headers['Content-Type'] == "application/json":
-        if validations.validate_objectid(trans_id):
+        if validations.validate_objectid(transaction_id):
             try:
                 data = request.get_json()
             except Exception:
@@ -244,16 +253,16 @@ def put_one_transaction(trans_type, trans_id):
                     status="400",
                     message="The JSON is incorrectly formatted"
                 ), 400
-            ans = {}
-            if trans_type == "purchases":
-                ans = transactions.purchases.find_one({"_id": ObjectId(trans_id)})
-                if ans:
-                    del ans["_id"]
-                    ans.update(data)
-                    if validations.validate_purchase(ans):
-                        if dates.validate_new_date(ans["date"]):
-                            if validations.validate_subtotal(ans) and validations.validate_tax(ans):
-                                transactions.purchases.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+            transaction = {}
+            if transaction_type == "purchases":
+                transaction = transactions_collection.purchases.find_one({"_id": ObjectId(transaction_id)})
+                if transaction:
+                    del transaction["_id"]
+                    transaction.update(data)
+                    if validations.validate_purchase(transaction):
+                        if dates.validate_new_date(transaction["date"]):
+                            if validations.validate_subtotal(transaction) and validations.validate_tax(transaction):
+                                transactions_collection.purchases.update_one({"_id": ObjectId(transaction_id)}, {"$set": data})
                             else:
                                 return jsonify(
                                     result="Failure",
@@ -278,14 +287,14 @@ def put_one_transaction(trans_type, trans_id):
                         status="400",
                         message="A transaction with that ID doesn't exist"
                     ), 400
-            elif trans_type == "transformations":
-                ans = transactions.transformations.find_one({"_id": ObjectId(trans_id)})
-                if ans:
-                    del ans["_id"]
-                    ans.update(data)
-                    if validations.validate_transformation(ans):
-                        if dates.validate_new_date(ans["date"]):
-                            transactions.transformations.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+            elif transaction_type == "transformations":
+                transaction = transactions_collection.transformations.find_one({"_id": ObjectId(transaction_id)})
+                if transaction:
+                    del transaction["_id"]
+                    transaction.update(data)
+                    if validations.validate_transformation(transaction):
+                        if dates.validate_new_date(transaction["date"]):
+                            transactions_collection.transformations.update_one({"_id": ObjectId(transaction_id)}, {"$set": data})
                         else:
                             return jsonify(
                                 result="Failure",
@@ -304,13 +313,13 @@ def put_one_transaction(trans_type, trans_id):
                         status="400",
                         message="A transaction with that ID doesn't exist"
                     ), 400
-            elif trans_type == "densities":
-                ans = transactions.densities.find_one({"_id": ObjectId(trans_id)})
-                if ans:
-                    del ans["_id"]
-                    ans.update(data)
-                    if validations.validate_density(ans):
-                        transactions.densities.update_one({"_id": ObjectId(trans_id)}, {"$set": data})
+            elif transaction_type == "densities":
+                transaction = transactions_collection.densities.find_one({"_id": ObjectId(transaction_id)})
+                if transaction:
+                    del transaction["_id"]
+                    transaction.update(data)
+                    if validations.validate_density(transaction):
+                        transactions_collection.densities.update_one({"_id": ObjectId(transaction_id)}, {"$set": data})
                     else:
                         return jsonify(
                             result="Failure",
@@ -327,7 +336,7 @@ def put_one_transaction(trans_type, trans_id):
                 return jsonify(
                     result="Failure",
                     status="400",
-                    message="There is no sub-collection named " + trans_type
+                    message="There is no sub-collection named " + transaction_type
                 ), 400
         else:
             return jsonify(
@@ -351,20 +360,20 @@ def put_one_transaction(trans_type, trans_id):
 @application.route("/transactions/<trans_type>/<trans_id>", methods=["DELETE"])
 def delete_one_transaction(trans_type, trans_id):
     if validations.validate_objectid(trans_id):
-        ans = {}
+        transaction = {}
         if trans_type == "purchases":
-            ans = transactions.purchases.find_one_and_delete({"_id": ObjectId(trans_id)})
+            transaction = transactions_collection.purchases.find_one_and_delete({"_id": ObjectId(trans_id)})
         elif trans_type == "transformations":
-            ans = transactions.transformations.find_one_and_delete({"_id": ObjectId(trans_id)})
+            transaction = transactions_collection.transformations.find_one_and_delete({"_id": ObjectId(trans_id)})
         elif trans_type == "densities":
-            ans = transactions.densities.find_one_and_delete({"_id": ObjectId(trans_id)})
+            transaction = transactions_collection.densities.find_one_and_delete({"_id": ObjectId(trans_id)})
         else:
             return jsonify(
                 result="Failure",
                 status="400",
                 message="There is no sub-collection named " + trans_type
             ), 400
-        if ans:
+        if transaction:
             return jsonify(
                 result="Success",
                 status="200",
@@ -391,35 +400,35 @@ def delete_one_transaction(trans_type, trans_id):
 @application.route("/total_cost/<date>/<category>/<tax>")
 def total_cost(date, category="Consumable", tax=True):
     if tax is True or tax == "true":
-        tax_field = "$total"
+        cost_field = "$total"
     elif tax is False or tax == "false":
-        tax_field = "$stotal"
+        cost_field = "$stotal"
     pipeline = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
-        {"$project": {"_id": 0, "item": 1, "cost": tax_field}},
+        {"$project": {"_id": 0, "item": 1, "cost": cost_field}},
         {"$group": {"_id": "$item", "total cost": {"$sum": "$cost"}}},
         {"$project": {"_id": 0, "item": "$_id", "total cost": "$total cost"}},
         {"$sort": {"item": 1}}
     ]
-    req = list(transactions.purchases.aggregate(pipeline))
-    if not req:
+    AUCUNE_IDEE_CEST_QUOI = list(transactions_collection.purchases.aggregate(pipeline))
+    if not AUCUNE_IDEE_CEST_QUOI:
         return jsonify(
             result="Success",
             status="204",
             message="There are no transactions with the given date and category"
         ), 204
     else:
-        ans = {}
+        categories = {}
         # Détection de la catégorie
-        ans["category"] = commons.detect_category(req)
+        categories["category"] = commons.detect_category(AUCUNE_IDEE_CEST_QUOI)
         # Sommation des coûts
-        ans["total cost"] = 0
-        for item in req:
-            ans["total cost"] += item["total cost"]
-        ans["total cost"] = round(ans["total cost"], 2)
+        categories["total cost"] = 0
+        for item in AUCUNE_IDEE_CEST_QUOI:
+            categories["total cost"] += item["total cost"]
+        categories["total cost"] = round(categories["total cost"], 2)
         # Ajout de l'unité
-        ans["unit"] = "$"
-        return dumps(ans)
+        categories["unit"] = "$"
+        return dumps(categories)
 
 
 # Le coût moyen d'acquisition, pondéré par l'unité d'acquisition,
@@ -427,18 +436,18 @@ def total_cost(date, category="Consumable", tax=True):
 @application.route("/avg_cost_buy/<date>/<category>/<tax>")
 def avg_cost_buy(date, category="Consumable", tax=True):
     if tax is True or tax == "true":
-        tax_field = "$total"
+        cost_field = "$total"
     elif tax is False or tax == "false":
-        tax_field = "$stotal"
+        cost_field = "$stotal"
     pipeline = [
         {"$match": {"date": {"$lte": dates.convert_date(date)}, "item": {"$regex": category, "$options": ""}}},
-        {"$project": {"_id": 0, "item": 1, "cost": tax_field, "qte": "$qte", "unit": "$unit"}},
+        {"$project": {"_id": 0, "item": 1, "cost": cost_field, "qte": "$qte", "unit": "$unit"}},
         {"$group": {"_id": {"item": "$item", "unit": "$unit"},
                     "total cost": {"$sum": "$cost"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "unit": "$_id.unit",
                       "total cost": 1, "total qte": 1}}
     ]
-    req = list(transactions.purchases.aggregate(pipeline))
+    req = list(transactions_collection.purchases.aggregate(pipeline))
     if not req:
         return jsonify(
             result="Success",
@@ -504,7 +513,7 @@ def image(date):
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "total qte": "$total qte", "unit": "$_id.unit"}}
     ]
-    req_buy = list(transactions.purchases.aggregate(pipeline_buy))
+    req_buy = list(transactions_collection.purchases.aggregate(pipeline_buy))
 
     # Calculer la quantité de matériaux utilisées
     pipeline_use = [
@@ -512,7 +521,7 @@ def image(date):
         {"$group": {"_id": {"item": "$item", "unit": "$unit"}, "total qte": {"$sum": "$qte"}}},
         {"$project": {"_id": 0, "item": "$_id.item", "total qte": "$total qte", "unit": "$_id.unit"}}
     ]
-    req_use = list(transactions.transformations.aggregate(pipeline_use))
+    req_use = list(transactions_collection.transformations.aggregate(pipeline_use))
 
     if not req_buy and not req_use:
         return jsonify(
@@ -575,17 +584,17 @@ def image(date):
 
 # Retourne une liste contenant seulement les éléments Purchase
 def create_list_purchases():
-    return dumps(transactions.purchases.find())
+    return dumps(transactions_collection.purchases.find())
 
 
 # Retourne une liste contenant seulement les éléments Transformation
 def create_list_transformations():
-    return dumps(transactions.transformations.find())
+    return dumps(transactions_collection.transformations.find())
 
 
 # Retourne une liste contenant seulement les éléments Density
 def create_list_densities():
-    return dumps(transactions.densities.find())
+    return dumps(transactions_collection.densities.find())
 
 
 # Donne la liste de l'unité d'acquisition des items
@@ -596,7 +605,7 @@ def get_purchases_units():
                       "unit": {"$cond": [{"$gt": [{"$size": "$units"}, 1]}, "both", {"$arrayElemAt": ["$units", 0]}]}}},
         {"$sort": {"item": 1}}
     ]
-    req = transactions.purchases.aggregate(pipeline)
+    req = transactions_collection.purchases.aggregate(pipeline)
     return list(req)
 
 
@@ -609,7 +618,7 @@ def get_transformations_units():
                       "unit": {"$cond": [{"$gt": [{"$size": "$units"}, 1]}, "both", {"$arrayElemAt": ["$units", 0]}]}}},
         {"$sort": {"item": 1}}
     ]
-    req = transactions.transformations.aggregate(pipeline)
+    req = transactions_collection.transformations.aggregate(pipeline)
     return list(req)
 
 
@@ -639,10 +648,10 @@ def convert_densities_numbers(item):
 # Valider si tous les nombres de Purchases sont valides
 def validate_purchases_numbers(item):
     try:
-        w = int(item["qte"])
-        x = float(item["total"])
-        y = float(item["stotal"])
-        z = float(item["tax"])
+        int(item["qte"])
+        float(item["total"])
+        float(item["stotal"])
+        float(item["tax"])
         return True
     except ValueError:
         return False
@@ -651,8 +660,8 @@ def validate_purchases_numbers(item):
 # Valider si tous les nombres de Transformations sont valides
 def validate_transformations_numbers(item):
     try:
-        x = int(item["qte"])
-        y = int(item["job_id"])
+        int(item["qte"])
+        int(item["job_id"])
         return True
     except ValueError:
         return False
@@ -661,8 +670,8 @@ def validate_transformations_numbers(item):
 # Valider si tous les nombres de Densities sont valides
 def validate_densities_numbers(item):
     try:
-        x = float(item["g"])
-        y = float(item["ml"])
+        float(item["g"])
+        float(item["ml"])
         return True
     except ValueError:
         return False
@@ -670,14 +679,14 @@ def validate_densities_numbers(item):
 
 # Retourne une liste contenant tous les items
 def list_all_items():
-    req = transactions.purchases.distinct("item")
-    req.extend(transactions.transformations.distinct("item"))
+    req = transactions_collection.purchases.distinct("item")
+    req.extend(transactions_collection.transformations.distinct("item"))
     return list(set(req))
 
 
 # Retourne une liste contenant tous les items avec plusieurs unités possibles
 def list_all_many_units_items():
-    req = transactions.densities.distinct("item")
+    req = transactions_collection.densities.distinct("item")
     return list(set(req))
 
 
@@ -691,7 +700,7 @@ def get_item_density(item):
     # Devra être refait en évitant d'hardcoder les lignes de code comme "if 'Base Oil' in item"
     if item not in list_all_many_units_items():
         if "Base Oil" in item:
-            ans = transactions.densities.find_one({"item": "Consumable - Base Oil"})
+            ans = transactions_collection.densities.find_one({"item": "Consumable - Base Oil"})
         else:
             return jsonify(
                 result="Success",
@@ -699,7 +708,7 @@ def get_item_density(item):
                 message="There are no density for this item"
             ), 204
     else:
-        ans = transactions.densities.find_one({"item": item})
+        ans = transactions_collection.densities.find_one({"item": item})
     density = ans["g"] / ans["ml"]
     return density
 

@@ -14,6 +14,7 @@ def get_index_of(array, item):
 
 
 # Extraction de la sous-string qui détermine la catégorie utilisée
+# Je ne comprends ce que fait cette fonction la.
 def detect_category(array):
     ans = ""
     if len(array) == 1:
